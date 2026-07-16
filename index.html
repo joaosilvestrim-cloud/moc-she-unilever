@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOC · SHE — Gestão de Alteração</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2f7;--surface:#fff;--surface-2:#f4f7fb;--ink:#0e2438;--ink-soft:#4d6175;--ink-faint:#86939f;
+    --line:#e0e8f1;--brand:#0060A8;--brand-deep:#003E73;--brand-2:#1a83d4;--brand-soft:#e4f0fa;
+    --sidebar:#003a6e;--sidebar-2:#002545;
+    --ok:#1f9d57;--ok-soft:#e6f6ed;--warn:#e8930c;--warn-soft:#fdf2e0;--danger:#d6336c;--danger-soft:#fdeaf1;
+    --pend:#9aa6b2;--qual:#7b3fe4;--qual-soft:#f0e9fd;
+    --shadow:0 1px 2px rgba(14,36,56,.06),0 12px 30px -16px rgba(0,62,115,.28);--radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:"IBM Plex Sans",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.45;
+    background-image:radial-gradient(circle at 1px 1px,rgba(0,96,168,.045) 1px,transparent 0);background-size:22px 22px}
+  .mono{font-family:"IBM Plex Mono",monospace}.pop{font-family:"Poppins",sans-serif}
+  .app{display:grid;grid-template-columns:262px 1fr;min-height:100vh}
+  .hidden{display:none!important}
+
+  /* ---------- login ---------- */
+  #login{position:fixed;inset:0;z-index:200;background:linear-gradient(135deg,#003a6e,#001a33);display:grid;place-items:center;transition:opacity .5s}
+  #login .box{background:#fff;border-radius:22px;padding:38px;width:390px;text-align:center;box-shadow:0 40px 90px -30px rgba(0,0,0,.6)}
+  #login .mark{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--brand),var(--brand-2));display:grid;place-items:center;margin:0 auto 14px}
+  #login .mark svg{width:34px;height:34px;stroke:#fff;fill:none;stroke-width:1.9}
+  #login h2{font-family:"Poppins";font-weight:700;font-size:19px}
+  #login p{font-size:12.5px;color:var(--ink-faint);margin:5px 0 22px}
+  #login .fld{text-align:left;margin-bottom:13px}
+  #login label{font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--ink-soft);text-transform:uppercase}
+  #login input,#login select{width:100%;margin-top:5px;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font-family:inherit;font-size:14px;outline:none;background:#fff;color:var(--ink)}
+  #login input:focus,#login select:focus{border-color:var(--brand)}
+  #login button{width:100%;margin-top:10px;padding:13px;background:var(--brand);color:#fff;border:0;border-radius:11px;font-family:"Poppins";font-weight:600;font-size:15px;cursor:pointer;transition:.15s}
+  #login button:hover{background:var(--brand-deep)}
+  #login .foot{margin-top:18px;font-size:11px;color:var(--ink-faint);line-height:1.6}
+
+  /* ---------- logo Unilever ---------- */
+  .uni-lock{display:flex;flex-direction:column;align-items:center;gap:1px;margin-bottom:4px}
+  .uni-u{width:76px;height:76px}
+  .uni-u svg{width:100%;height:100%;display:block}
+  .uni-word{font-family:'Segoe Script','Brush Script MT','Bradley Hand','Comic Sans MS',cursive;font-size:29px;color:#1a83d4;font-weight:600;line-height:1;margin-top:-4px;letter-spacing:.5px}
+  .uni-sep{height:1px;background:var(--line);width:74%;margin:12px auto}
+  .uni-chip{width:40px;height:40px;border-radius:11px;background:#fff;display:grid;place-items:center;flex:none;padding:4px;box-shadow:0 2px 8px -3px rgba(0,0,0,.4)}
+  .uni-chip svg{width:100%;height:100%;display:block}
+  .uni-foot{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.09)}
+  .uni-foot .u16{width:26px;height:26px;border-radius:7px;background:#fff;display:grid;place-items:center;flex:none;padding:3px}
+  .uni-foot .u16 svg{width:100%;height:100%}
+  .uni-foot span{font-size:10.5px;color:#8fb0cd;line-height:1.3}
+  .uni-foot b{color:#dbe9f5;font-weight:700}
+
+  /* ---------- sidebar ---------- */
+  .sidebar{background:linear-gradient(180deg,var(--sidebar),var(--sidebar-2));color:#cfe0ef;padding:20px 14px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+  .brand{display:flex;align-items:center;gap:12px;padding:2px 8px 14px}
+  .brand .mk{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a83d4,#5fc0f5);display:grid;place-items:center;flex:none}
+  .brand .mk svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2}
+  .brand b{font-family:"Poppins";font-weight:700;color:#fff;font-size:15px;letter-spacing:-.2px;display:block;line-height:1.1}
+  .brand span{font-size:10.5px;color:#8fb0cd}
+  .nav-label{font-size:9.5px;letter-spacing:1.3px;text-transform:uppercase;color:#5f86a6;margin:14px 9px 4px;font-weight:700}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:10px;color:#bcd2e6;font-weight:500;font-size:13.5px;cursor:pointer;border:1px solid transparent;transition:.18s}
+  .nav-item svg{width:17px;height:17px;flex:none;stroke-width:1.8;fill:none;stroke:currentColor}
+  .nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav-item.active{background:linear-gradient(100deg,rgba(26,131,212,.45),rgba(26,131,212,.12));color:#fff;border-color:rgba(120,190,240,.4)}
+  .nav-item .badge{margin-left:auto;background:#d6336c;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px}
+  .nav-sub{margin-left:16px;font-size:12.8px;padding:6px 12px}
+  .sidebar-foot{margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.09);font-size:11px;color:#8fb0cd}
+  .live{display:flex;align-items:center;gap:7px;font-size:11px;color:#a6e6c0;padding:8px 10px;background:rgba(31,157,87,.16);border-radius:9px;margin-bottom:8px}
+  .live .led{width:7px;height:7px;border-radius:50%;background:#3ddc84;box-shadow:0 0 8px #3ddc84;animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  .sidebar-foot b{color:#dbe9f5}
+
+  /* ---------- topbar / view ---------- */
+  .main{overflow:hidden}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(238,242,247,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:12px 30px;display:flex;align-items:center;gap:16px}
+  .topbar .crumb{font-size:11.5px;color:var(--ink-faint);font-weight:500}
+  .topbar h1{font-family:"Poppins";font-size:19px;font-weight:700;letter-spacing:-.3px}
+  .spacer{flex:1}
+  .role-sel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:7px 11px;font-family:inherit;font-size:12.5px;color:var(--ink);font-weight:600;cursor:pointer}
+  .search{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px;color:var(--ink-faint);font-size:13px;width:210px}
+  .search input{border:0;outline:0;background:none;font-family:inherit;font-size:13px;color:var(--ink);width:100%}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+  .view{padding:24px 30px 70px;max-width:1360px;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ---------- atoms ---------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .pad{padding:18px 20px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;letter-spacing:.2px;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:#14663a}
+  .pill.warn{background:var(--warn-soft);color:#8a5804}
+  .pill.danger{background:var(--danger-soft);color:#9b1c48}
+  .pill.info{background:var(--brand-soft);color:var(--brand-deep)}
+  .pill.neutral{background:#eef1f4;color:#5b6b7a}
+  .pill.qual{background:var(--qual-soft);color:#4d1f9e}
+  .section-title{font-family:"Poppins";font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .muted{color:var(--ink-soft);font-size:13px}
+  .tiny{font-size:11.5px;color:var(--ink-faint)}
+  .btn{background:var(--brand);color:#fff;border:0;font-family:inherit;font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(0,96,168,.5)}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn.ghost{background:var(--surface-2);color:var(--brand);border:1px solid var(--line)}
+  .btn.ghost:hover{box-shadow:none;background:var(--brand-soft)}
+  .btn.ok{background:var(--ok)}.btn.danger{background:var(--danger)}
+  .btn.sm{padding:6px 11px;font-size:12px}
+  .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 14px;gap:12px;flex-wrap:wrap}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
+  .stat{padding:16px 18px;position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .stat .lb{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint)}
+  .stat .vl{font-family:"Poppins";font-size:29px;font-weight:700;letter-spacing:-1px;margin-top:3px}
+  .stat .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+  .stat .bar{position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
+  .stat.g .bar{background:var(--ok)}.stat.r .bar{background:var(--danger)}.stat.y .bar{background:var(--warn)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{text-align:left;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-faint);font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:10px;border-bottom:1px solid #eef2f6;vertical-align:middle}
+  tbody tr:hover{background:var(--surface-2)}
+  tbody tr.clk{cursor:pointer}
+  .tbl-wrap{overflow-x:auto}
+  .lnk{color:var(--brand);font-weight:700;cursor:pointer;text-decoration:none}
+  .lnk:hover{text-decoration:underline}
+
+  .fld-l{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:5px}
+  input[type=text],input[type=date],input[type=email],select,textarea{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:13.5px;color:var(--ink);background:#fff;outline:none;transition:.15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(0,96,168,.1)}
+  textarea{resize:vertical;min-height:82px;line-height:1.5}
+  .fld{margin-bottom:14px}
+  .err{border-color:var(--danger)!important}
+  .err-msg{font-size:11.5px;color:var(--danger);font-weight:600;margin-top:4px}
+  .ro{background:var(--surface-2);color:var(--ink-soft)}
+
+  /* ---------- wizard ---------- */
+  .steps{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+  .step{flex:1;min-width:120px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink-faint);display:flex;align-items:center;gap:9px;transition:.2s}
+  .step .n{width:22px;height:22px;border-radius:50%;background:#e9eef4;color:var(--ink-faint);display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+  .step.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-deep)}
+  .step.on .n{background:var(--brand);color:#fff}
+  .step.done{color:#14663a;border-color:#bfe6d0;background:var(--ok-soft)}
+  .step.done .n{background:var(--ok);color:#fff}
+  .wiz-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+  .type-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}
+  .type-card{padding:22px;border:2px solid var(--line);border-radius:16px;cursor:pointer;background:#fff;transition:.18s}
+  .type-card:hover{border-color:var(--brand-2);transform:translateY(-2px)}
+  .type-card.sel{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 10px 26px -14px rgba(0,96,168,.6)}
+  .type-card .ic{width:44px;height:44px;border-radius:13px;background:var(--brand-soft);display:grid;place-items:center;margin-bottom:12px}
+  .type-card.sel .ic{background:#fff}
+  .type-card .ic svg{width:23px;height:23px;stroke:var(--brand);fill:none;stroke-width:1.8}
+  .type-card h4{font-family:"Poppins";font-size:15.5px;font-weight:700;margin-bottom:5px}
+  .type-card p{font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+
+  /* ---------- questionário ---------- */
+  .dim{margin-bottom:18px}
+  .dim-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .dim-h .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .dim-h h4{font-family:"Poppins";font-size:13.5px;font-weight:700}
+  .q{border:1px solid var(--line);border-radius:13px;padding:14px 16px;margin-bottom:9px;background:#fff;transition:.18s}
+  .q.yes{border-color:var(--warn);background:#fffcf5}
+  .q.q-qual.yes{border-color:var(--qual);background:#faf7ff}
+  .q-top{display:flex;gap:14px;align-items:flex-start}
+  .q-txt{flex:1;font-size:13.5px;font-weight:600;line-height:1.5}
+  .q-opts{display:flex;gap:6px;flex:none}
+  .q-opt{padding:5px 14px;border:1.5px solid var(--line);border-radius:9px;font-size:12px;font-weight:700;cursor:pointer;background:#fff;color:var(--ink-soft);transition:.15s;user-select:none}
+  .q-opt:hover{border-color:var(--brand-2)}
+  .q-opt.on-yes{background:var(--warn);border-color:var(--warn);color:#fff}
+  .q-opt.on-no{background:var(--ink-soft);border-color:var(--ink-soft);color:#fff}
+  .q-gen{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:10px;align-items:end}
+  .q-gen .fld{margin:0}
+  .auto-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--brand-deep);background:var(--brand-soft);padding:3px 8px;border-radius:6px;margin-bottom:8px}
+  .qual-note{background:linear-gradient(100deg,var(--qual-soft),#fff);border:1px solid #ddd0fa;border-left:4px solid var(--qual);border-radius:12px;padding:13px 16px;margin-bottom:12px;font-size:12.5px;color:#3d1880;line-height:1.6}
+  .qual-note b{color:#2e0f66}
+
+  /* ---------- detalhe do MOC ---------- */
+  .moc-hd{background:linear-gradient(100deg,var(--brand),var(--brand-2));color:#fff;border-radius:16px 16px 0 0;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .moc-hd .t{font-family:"Poppins";font-size:17px;font-weight:700}
+  .moc-hd .st{font-size:12px;opacity:.9;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .moc-body{display:grid;grid-template-columns:210px 1fr;min-height:420px}
+  .moc-nav{border-right:1px solid var(--line);background:var(--surface-2);padding:16px 10px;border-radius:0 0 0 16px}
+  .moc-nav .id{font-family:"IBM Plex Mono";font-size:12px;font-weight:700;color:var(--brand);padding:0 10px 4px}
+  .moc-nav .sm{font-size:11px;color:var(--ink-faint);padding:0 10px 12px;line-height:1.5;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .moc-nav-item{padding:8px 11px;border-radius:9px;font-size:12.8px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:.15s;display:flex;align-items:center;gap:8px}
+  .moc-nav-item:hover{background:#e8eef5;color:var(--ink)}
+  .moc-nav-item.active{background:#fff;color:var(--brand);box-shadow:var(--shadow)}
+  .moc-nav-item .cnt{margin-left:auto;font-size:10px;font-weight:700;background:#e2e8f0;color:#5b6b7a;padding:1px 6px;border-radius:99px}
+  .moc-pane{padding:22px 24px}
+  .kv{display:grid;grid-template-columns:190px 1fr;gap:10px 16px;font-size:13.5px}
+  .kv dt{color:var(--ink-faint);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding-top:3px}
+  .kv dd{font-weight:600}
+  .ro-box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;line-height:1.6;white-space:pre-wrap}
+  .sec-h{font-family:"Poppins";font-size:14px;font-weight:700;margin:22px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .sec-h:first-child{margin-top:0}
+
+  /* ---------- timeline / trilha ---------- */
+  .tl{position:relative;padding-left:26px}
+  .tl:before{content:"";position:absolute;left:7px;top:6px;bottom:6px;width:2px;background:var(--line)}
+  .tl-i{position:relative;padding-bottom:16px}
+  .tl-i:before{content:"";position:absolute;left:-23px;top:4px;width:12px;height:12px;border-radius:50%;background:#fff;border:2.5px solid var(--brand)}
+  .tl-i.ok:before{border-color:var(--ok)}.tl-i.no:before{border-color:var(--danger)}.tl-i.pend:before{border-color:var(--pend)}
+  .tl-i .w{font-size:13px;font-weight:700}
+  .tl-i .d{font-size:11.5px;color:var(--ink-faint);font-family:"IBM Plex Mono"}
+  .tl-i .m{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+
+  /* ---------- e-mail preview ---------- */
+  .mail{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px;background:#fff}
+  .mail-h{background:var(--surface-2);padding:10px 14px;border-bottom:1px solid var(--line);font-size:12px}
+  .mail-h b{font-size:13px}
+  .mail-b{padding:14px;font-size:13px;line-height:1.6;color:var(--ink-soft)}
+  .mail-b .btn{margin-top:10px}
+  .mail.remind{border-left:4px solid var(--warn)}
+  .mail.late{border-left:4px solid var(--danger)}
+
+  /* ---------- charts ---------- */
+  .chart{width:100%;overflow:visible}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink-soft);font-weight:600}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px}
+  .filters{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-bottom:16px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:11px 14px;box-shadow:var(--shadow)}
+  .filters select{width:auto;min-width:130px;padding:6px 9px;font-size:12.5px;font-weight:600}
+  .filters .lb{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-faint)}
+
+  /* ---------- modal / toast ---------- */
+  .ovl{position:fixed;inset:0;background:rgba(10,26,42,.55);backdrop-filter:blur(3px);z-index:150;display:grid;place-items:center;padding:20px;animation:fade .2s}
+  .modal{background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;box-shadow:0 40px 90px -25px rgba(0,0,0,.5)}
+  .modal-h{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+  .modal-h h3{font-family:"Poppins";font-size:16px;font-weight:700}
+  .modal-b{padding:20px 22px}
+  .modal-f{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;background:var(--surface-2);border-radius:0 0 18px 18px}
+  .x{margin-left:auto;cursor:pointer;color:var(--ink-faint);font-size:22px;line-height:1;background:none;border:0}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;z-index:300;opacity:0;transition:.3s;box-shadow:0 20px 40px -12px rgba(0,0,0,.5);display:flex;align-items:center;gap:9px;max-width:90vw}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.ok{background:#14663a}#toast.bad{background:#9b1c48}
+
+  /* ---------- tour ---------- */
+  #tourOvl{position:fixed;inset:0;z-index:180;background:rgba(6,20,34,.6);animation:fade .25s}
+  #tourBox{position:fixed;z-index:181;background:#fff;border-radius:16px;padding:18px 20px;width:340px;box-shadow:0 30px 70px -20px rgba(0,0,0,.6)}
+  #tourBox .n{font-size:10.5px;font-weight:700;letter-spacing:.8px;color:var(--brand);text-transform:uppercase}
+  #tourBox h4{font-family:"Poppins";font-size:15px;font-weight:700;margin:4px 0 7px}
+  #tourBox p{font-size:13px;color:var(--ink-soft);line-height:1.6}
+  #tourBox .f{display:flex;gap:8px;margin-top:14px;align-items:center}
+  .tour-hl{position:relative;z-index:182;box-shadow:0 0 0 4px rgba(26,131,212,.9),0 0 0 10px rgba(26,131,212,.25);border-radius:12px}
+
+  /* ---------- escopo ---------- */
+  .esc-divider{display:flex;align-items:center;gap:12px;margin:28px 0 16px}
+  .esc-divider span{font-family:"Poppins";font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--brand);background:var(--brand-soft);padding:5px 12px;border-radius:99px;white-space:nowrap}
+  .esc-divider:after{content:"";flex:1;height:1px;background:var(--line)}
+  .flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+  .flow .bx{border:1.5px solid var(--brand);background:var(--brand-soft);border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--brand-deep);text-align:center}
+  .flow .ar{color:var(--brand-2);font-weight:700;font-size:16px}
+  .note{background:var(--surface-2);border-left:4px solid var(--brand);border-radius:10px;padding:12px 15px;font-size:12.5px;color:var(--ink-soft);line-height:1.65;margin:12px 0}
+  .note b{color:var(--ink)}
+  ul.bul{margin:8px 0 8px 18px;font-size:13px;color:var(--ink-soft);line-height:1.75}
+  ul.bul b{color:var(--ink)}
+
+  /* ---------- help ---------- */
+  .help-q{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;background:#fff}
+  .help-q summary{padding:12px 16px;font-size:13.5px;font-weight:700;cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px}
+  .help-q summary::-webkit-details-marker{display:none}
+  .help-q summary:before{content:"+";color:var(--brand);font-weight:700;font-size:16px}
+  .help-q[open] summary:before{content:"−"}
+  .help-q .a{padding:0 16px 14px 40px;font-size:13px;color:var(--ink-soft);line-height:1.7}
+
+  .navToggle{display:none;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 9px;cursor:pointer}
+  @media(max-width:980px){
+    .app{grid-template-columns:1fr}
+    .sidebar{position:fixed;left:0;top:0;bottom:0;width:262px;z-index:100;transform:translateX(-100%);transition:transform .25s}
+    .sidebar.open{transform:none}
+    .navToggle{display:block}
+    .stat-grid{grid-template-columns:1fr 1fr}
+    .grid2,.grid3,.type-cards,.q-gen{grid-template-columns:1fr}
+    .moc-body{grid-template-columns:1fr}
+    .moc-nav{border-right:0;border-bottom:1px solid var(--line);border-radius:0;display:flex;gap:6px;overflow-x:auto}
+    .moc-nav .id,.moc-nav .sm{display:none}
+    .moc-nav-item{white-space:nowrap}
+    .kv{grid-template-columns:1fr;gap:2px 0}
+    .kv dd{margin-bottom:8px}
+    .view{padding:18px 16px 60px}
+    .topbar{padding:10px 16px}
+    .search{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="box">
+    <div class="uni-lock">
+      <div class="uni-u"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#1a83d4" d="M40 30 L70 30 L70 120 A30 30 0 0 0 130 120 L130 30 L160 30 L160 120 A60 60 0 0 1 40 120 Z"/><circle cx="55" cy="57" r="4.5" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"><path d="M55 47.5V44M55 66.5V70M44.5 57H41M69 57H65.5M47.6 49.6l-2.5-2.5M62.4 49.6l2.5-2.5M47.6 64.4l-2.5 2.5M62.4 64.4l2.5 2.5"/></g><path fill="#fff" d="M55 99c-7-5-11-8.3-11-12.3 0-3 2.2-5.2 5.2-5.2 2.2 0 4.2 1.3 5.8 3.3 1.6-2 3.6-3.3 5.8-3.3 3 0 5.2 2.2 5.2 5.2 0 4-4 7.3-11 12.3z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M47 124c3-4.5 6.5-4.5 8 0 1.5-4.5 5-4.5 8 0"/><g fill="#fff"><circle cx="145" cy="58" r="2.8"/><circle cx="151.5" cy="58" r="2.8"/><circle cx="148.2" cy="63.6" r="2.8"/><circle cx="141.8" cy="63.6" r="2.8"/><circle cx="138.5" cy="58" r="2.8"/><circle cx="141.8" cy="52.4" r="2.8"/><circle cx="148.2" cy="52.4" r="2.8"/></g><path fill="#fff" d="M138 99c-1-9 6-15 15-15 1 9-6 15-15 15z"/><path fill="none" stroke="#1a83d4" stroke-width="1.4" stroke-linecap="round" d="M140 97l10-9"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M137 123c2.5-3.5 5-3.5 7.5 0s5 3.5 7.5 0"/><path fill="#fff" d="M82 142c4.5 5.5 6.5 8.7 6.5 11a6.5 6.5 0 0 1-13 0c0-2.3 2-5.5 6.5-11z"/><path fill="#fff" d="M100 151l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z"/><path fill="#fff" d="M110 150c4-4.5 11-4.5 14.5 0-3.5 4.5-10.5 4.5-14.5 0z"/><path fill="#fff" d="M110 150l-5.5-3.3v6.6z"/><circle cx="120.5" cy="149" r="1.1" fill="#1a83d4"/></svg></div>
+      <div class="uni-word">Unilever</div>
+    </div>
+    <div class="uni-sep"></div>
+    <h2>MOC · SHE</h2>
+    <p>Gestão de Alteração — Safety, Health &amp; Environment</p>
+    <div class="fld"><label>Usuário</label><input id="lgUser" type="text" value="vania.barbosa" autocomplete="off"></div>
+    <div class="fld"><label>Senha</label><input id="lgPass" type="password" value="••••••••"></div>
+    <div class="fld"><label>Perfil de acesso</label>
+      <select id="lgRole">
+        <option value="admin">Administrador Master — Vânia Barbosa</option>
+        <option value="solicitante">Solicitante — Leonardo Siqueira</option>
+        <option value="aprovador">Aprovador — Ana P Gomes</option>
+        <option value="viewer">Visualizador (somente leitura) — Tamires Cavani</option>
+      </select>
+    </div>
+    <button onclick="doLogin()">Entrar</button>
+    <div class="foot"><b>Protótipo navegável</b> · Drive Data<br>Dados fictícios para demonstração de escopo</div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="uni-chip"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#1a83d4" d="M40 30 L70 30 L70 120 A30 30 0 0 0 130 120 L130 30 L160 30 L160 120 A60 60 0 0 1 40 120 Z"/><circle cx="55" cy="57" r="4.5" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"><path d="M55 47.5V44M55 66.5V70M44.5 57H41M69 57H65.5M47.6 49.6l-2.5-2.5M62.4 49.6l2.5-2.5M47.6 64.4l-2.5 2.5M62.4 64.4l2.5 2.5"/></g><path fill="#fff" d="M55 99c-7-5-11-8.3-11-12.3 0-3 2.2-5.2 5.2-5.2 2.2 0 4.2 1.3 5.8 3.3 1.6-2 3.6-3.3 5.8-3.3 3 0 5.2 2.2 5.2 5.2 0 4-4 7.3-11 12.3z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M47 124c3-4.5 6.5-4.5 8 0 1.5-4.5 5-4.5 8 0"/><g fill="#fff"><circle cx="145" cy="58" r="2.8"/><circle cx="151.5" cy="58" r="2.8"/><circle cx="148.2" cy="63.6" r="2.8"/><circle cx="141.8" cy="63.6" r="2.8"/><circle cx="138.5" cy="58" r="2.8"/><circle cx="141.8" cy="52.4" r="2.8"/><circle cx="148.2" cy="52.4" r="2.8"/></g><path fill="#fff" d="M138 99c-1-9 6-15 15-15 1 9-6 15-15 15z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M137 123c2.5-3.5 5-3.5 7.5 0s5 3.5 7.5 0"/><path fill="#fff" d="M82 142c4.5 5.5 6.5 8.7 6.5 11a6.5 6.5 0 0 1-13 0c0-2.3 2-5.5 6.5-11z"/><path fill="#fff" d="M100 151l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z"/><path fill="#fff" d="M110 150c4-4.5 11-4.5 14.5 0-3.5 4.5-10.5 4.5-14.5 0z"/><path fill="#fff" d="M110 150l-5.5-3.3v6.6z"/><circle cx="120.5" cy="149" r="1.1" fill="#1a83d4"/></svg></div>
+      <div><b>MOC · SHE</b><span>Gestão de Alteração</span></div>
+    </div>
+
+    <div class="nav-label">Visão Geral</div>
+    <div class="nav-item" data-view="home"><svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg> Início</div>
+    <div class="nav-item" data-view="meus"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg> Meus MOCs</div>
+    <div class="nav-item" data-view="aprovar"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg> Para Aprovar <span class="badge" id="apBadge">0</span></div>
+
+    <div class="nav-label">Módulo 1 · Gestão de MOC</div>
+    <div class="nav-item" data-view="novo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> Adicionar novo MOC</div>
+    <div class="nav-item" data-view="acoes"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M3 12h6M3 6h10M3 18h8"/></svg> Itens de Ação</div>
+    <div class="nav-item" data-view="notif"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 6l8 6 8-6"/></svg> Notificações de E-mail</div>
+    <div class="nav-item" data-view="escopo"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> Escopo do Módulo 1</div>
+
+    <div class="nav-label">Módulo 2 · Painel Analítico</div>
+    <div class="nav-item" data-view="painel"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg> Painel de MOCs</div>
+
+    <div class="nav-label">Configuração</div>
+    <div class="nav-item" data-view="cfg-quest"><svg viewBox="0 0 24 24"><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg> Questionário de Impacto</div>
+    <div class="nav-item" data-view="cfg-aprov"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg> Aprovadores Padrão</div>
+    <div class="nav-item" data-view="cfg-sla"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> SLAs e Prazos</div>
+
+    <div class="nav-label">Administração</div>
+    <div class="nav-item" data-view="admin-users"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Usuários e Acessos</div>
+    <div class="nav-item" data-view="ajuda"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01"/></svg> Manual do Sistema</div>
+
+    <div class="sidebar-foot">
+      <div class="live"><span class="led"></span> Painel em tempo real · sincronizado</div>
+      <b>Piloto: Pouso Alegre</b><br>Protótipo Drive Data · v1.0
+      <div class="uni-foot">
+        <div class="u16"><svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><path fill="#1a83d4" d="M40 30 L70 30 L70 120 A30 30 0 0 0 130 120 L130 30 L160 30 L160 120 A60 60 0 0 1 40 120 Z"/><circle cx="55" cy="57" r="4.5" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"><path d="M55 47.5V44M55 66.5V70M44.5 57H41M69 57H65.5M47.6 49.6l-2.5-2.5M62.4 49.6l2.5-2.5M47.6 64.4l-2.5 2.5M62.4 64.4l2.5 2.5"/></g><path fill="#fff" d="M55 99c-7-5-11-8.3-11-12.3 0-3 2.2-5.2 5.2-5.2 2.2 0 4.2 1.3 5.8 3.3 1.6-2 3.6-3.3 5.8-3.3 3 0 5.2 2.2 5.2 5.2 0 4-4 7.3-11 12.3z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M47 124c3-4.5 6.5-4.5 8 0 1.5-4.5 5-4.5 8 0"/><g fill="#fff"><circle cx="145" cy="58" r="2.8"/><circle cx="151.5" cy="58" r="2.8"/><circle cx="148.2" cy="63.6" r="2.8"/><circle cx="141.8" cy="63.6" r="2.8"/><circle cx="138.5" cy="58" r="2.8"/><circle cx="141.8" cy="52.4" r="2.8"/><circle cx="148.2" cy="52.4" r="2.8"/></g><path fill="#fff" d="M138 99c-1-9 6-15 15-15 1 9-6 15-15 15z"/><path fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" d="M137 123c2.5-3.5 5-3.5 7.5 0s5 3.5 7.5 0"/><path fill="#fff" d="M82 142c4.5 5.5 6.5 8.7 6.5 11a6.5 6.5 0 0 1-13 0c0-2.3 2-5.5 6.5-11z"/><path fill="#fff" d="M100 151l2.2 5.8 5.8 2.2-5.8 2.2-2.2 5.8-2.2-5.8-5.8-2.2 5.8-2.2z"/><path fill="#fff" d="M110 150c4-4.5 11-4.5 14.5 0-3.5 4.5-10.5 4.5-14.5 0z"/><path fill="#fff" d="M110 150l-5.5-3.3v6.6z"/><circle cx="120.5" cy="149" r="1.1" fill="#1a83d4"/></svg></div>
+        <span><b>Unilever</b><br>Unidade Pouso Alegre</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="navToggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0e2438" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div>
+        <div class="crumb" id="crumb">Visão Geral</div>
+        <h1 id="title">Início</h1>
+      </div>
+      <div class="spacer"></div>
+      <div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg><input id="globalSearch" placeholder="Buscar MOC..." oninput="globalSearchGo(this.value)"></div>
+      <button class="btn ghost sm" onclick="startTour()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Tour</button>
+      <select class="role-sel" id="roleSel" onchange="setRole(this.value)">
+        <option value="admin">Admin Master</option>
+        <option value="solicitante">Solicitante</option>
+        <option value="aprovador">Aprovador</option>
+        <option value="viewer">Visualizador</option>
+      </select>
+      <div class="avatar" id="avatar">VB</div>
+    </div>
+    <div class="view" id="view"></div>
+  </main>
+</div>
+
+<div id="toast"></div>
+<div id="modalHost"></div>
+<div id="tourHost"></div>
+
+<script>
+/* ============================================================
+   MOC · SHE — protótipo navegável (Drive Data)
+   Arquivo único, sem build. Dados fictícios.
+   ============================================================ */
+
+/* ---------------- pessoas ---------------- */
+const PEOPLE = [
+  {id:'vania',   nome:'Vânia Barbosa',     email:'vania.barbosa@empresa.com',    area:'SHE',           papel:'Administrador Master', site:'Pouso Alegre'},
+  {id:'ana',     nome:'Ana P Gomes',       email:'ana.gomes@empresa.com',        area:'Qualidade',     papel:'Aprovador',            site:'Pouso Alegre'},
+  {id:'leo',     nome:'Leonardo Siqueira', email:'leonardo.siqueira@empresa.com',area:'Manutenção',    papel:'Solicitante',          site:'Pouso Alegre'},
+  {id:'flavio',  nome:'Flávio Brianezi',   email:'flavio.brianezi@empresa.com',  area:'TI',            papel:'Aprovador',            site:'Pouso Alegre'},
+  {id:'carlos',  nome:'Carlos Menezes',    email:'carlos.menezes@empresa.com',   area:'Produção',      papel:'Aprovador',            site:'Pouso Alegre'},
+  {id:'juliana', nome:'Juliana Prado',     email:'juliana.prado@empresa.com',    area:'Meio Ambiente', papel:'Aprovador',            site:'Pouso Alegre'},
+  {id:'rogerio', nome:'Rogério Lima',      email:'rogerio.lima@empresa.com',     area:'Engenharia',    papel:'Solicitante',          site:'Pouso Alegre'},
+  {id:'marta',   nome:'Marta Nogueira',    email:'marta.nogueira@empresa.com',   area:'Treinamento',   papel:'Solicitante',          site:'Pouso Alegre'},
+  {id:'eduardo', nome:'Eduardo Pontes',    email:'eduardo.pontes@empresa.com',   area:'Operações',     papel:'Aprovador',            site:'Pouso Alegre'},
+  {id:'silvia',  nome:'Silvia Rocha',      email:'silvia.rocha@empresa.com',     area:'Qualidade',     papel:'Aprovador',            site:'Garanhuns'},
+  {id:'tamires', nome:'Tamires Cavani',    email:'tamires.cavani@drivedata.com', area:'Drive Data',    papel:'Visualizador',         site:'—'},
+];
+const pName = id => (PEOPLE.find(p=>p.id===id)||{nome:id}).nome;
+const pMail = id => (PEOPLE.find(p=>p.id===id)||{email:''}).email;
+const pArea = id => (PEOPLE.find(p=>p.id===id)||{area:''}).area;
+const initials = n => n.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+/* ---------------- domínios ---------------- */
+const SITES = ['Pouso Alegre','Garanhuns'];
+const AREAS = {
+  'Pouso Alegre':['Envase — Linha PET 1','Envase — Linha PET 2','Preparo','Utilidades','Caldeira','ETE','Almoxarifado','Expedição'],
+  'Garanhuns':['Linha 1 — Sabonetes','Preparo','Utilidades','Almoxarifado']
+};
+const TIPOS_ALT = ['Equipamento','Processo','Material / Insumo','Infraestrutura','Pessoal / Organizacional','Software / Automação'];
+const IMPACTOS = ['Alto','Médio','Baixo'];
+
+/* ---------------- questionário de avaliação de impacto ----------------
+   Cada "Sim" gera automaticamente um item de ação.
+   O bloco QUALIDADE é o diferencial pedido na reunião: o sistema global
+   removeu essas perguntas e a unidade precisa delas por causa das auditorias.
+---------------------------------------------------------------------- */
+const DIMS = [
+  {id:'seg',  nome:'Segurança',            cor:'#d6336c'},
+  {id:'qual', nome:'Qualidade',            cor:'#7b3fe4', destaque:true},
+  {id:'amb',  nome:'Meio Ambiente',        cor:'#1f9d57'},
+  {id:'quim', nome:'Materiais Químicos',   cor:'#e8930c'},
+  {id:'trein',nome:'Treinamento',          cor:'#0060A8'},
+  {id:'doc',  nome:'Documentação',         cor:'#4d6175'},
+];
+let QUESTOES = [
+  {id:'q1', dim:'seg',  txt:'A alteração modifica procedimentos, dispositivos ou proteções de segurança?', acao:'Revisar procedimento de segurança e proteções', resp:'vania', dias:20, critica:true},
+  {id:'q2', dim:'seg',  txt:'Exige nova análise de risco (APR / HAZOP) ou revisão da existente?',          acao:'Executar análise de risco da alteração',        resp:'vania', dias:15, critica:true},
+  {id:'q3', dim:'seg',  txt:'Há trabalho em altura, espaço confinado, energia perigosa ou trabalho a quente?', acao:'Emitir permissões de trabalho e plano de bloqueio', resp:'eduardo', dias:10},
+
+  {id:'q4', dim:'qual', txt:'A alteração afeta especificação do produto ou material em contato com o produto?', acao:'Validar especificação e material de contato', resp:'ana', dias:20, critica:true},
+  {id:'q5', dim:'qual', txt:'Impacta parâmetro crítico de processo, PCC ou plano HACCP?',                  acao:'Revisar plano HACCP e parâmetros críticos',     resp:'ana', dias:20, critica:true},
+  {id:'q6', dim:'qual', txt:'Requer revalidação de limpeza, sanitização ou há risco de contaminação cruzada?', acao:'Revalidar procedimento de limpeza',         resp:'ana', dias:25},
+  {id:'q7', dim:'qual', txt:'Afeta rastreabilidade, codificação de lote ou identificação do produto?',     acao:'Ajustar rastreabilidade e codificação de lote', resp:'ana', dias:15},
+  {id:'q8', dim:'qual', txt:'Exige notificação ou aprovação de cliente, certificadora ou órgão regulador?', acao:'Notificar cliente / órgão regulador',          resp:'ana', dias:30, critica:true},
+  {id:'q9', dim:'qual', txt:'Exige atualização de documento do sistema da qualidade (POP / IT / ficha técnica)?', acao:'Atualizar documentação da qualidade',   resp:'ana', dias:20},
+
+  {id:'q10', dim:'amb', txt:'Gera resíduo novo, aumento de volume ou necessidade de caçamba/destinação?',  acao:'Providenciar destinação de resíduo (caçamba)',  resp:'juliana', dias:12},
+  {id:'q11', dim:'amb', txt:'Altera efluentes, emissões atmosféricas ou consumo de água/energia?',         acao:'Avaliar impacto ambiental e licenciamento',     resp:'juliana', dias:25},
+
+  {id:'q12', dim:'quim',txt:'Envolve novo produto químico ou alteração de concentração/uso?',              acao:'Cadastrar produto químico e obter FISPQ',       resp:'juliana', dias:18, critica:true},
+  {id:'q13', dim:'quim',txt:'Exige revisão de FISPQ, EPI ou compatibilidade de armazenagem?',              acao:'Revisar FISPQ, EPI e armazenagem',             resp:'vania', dias:15},
+
+  {id:'q14', dim:'trein',txt:'Requer treinamento das pessoas envolvidas na operação alterada?',            acao:'Ministrar treinamento às pessoas envolvidas',   resp:'marta', dias:20},
+  {id:'q15', dim:'trein',txt:'Requer atualização de matriz de competências ou reciclagem periódica?',      acao:'Atualizar matriz de competências',             resp:'marta', dias:25},
+
+  {id:'q16', dim:'doc', txt:'Requer atualização de desenhos, P&ID, layout ou lista de peças?',             acao:'Atualizar desenhos e documentação técnica',     resp:'rogerio', dias:30},
+  {id:'q17', dim:'doc', txt:'Requer atualização de plano de manutenção ou lista de sobressalentes?',       acao:'Atualizar plano de manutenção',                resp:'leo', dias:30},
+];
+const qById = id => QUESTOES.find(q=>q.id===id);
+const dimById = id => DIMS.find(d=>d.id===id) || {nome:id,cor:'#888'};
+
+/* ---------------- regra de complexidade ----------------
+   Simples  -> 3 aprovadores
+   Complexo -> 5 aprovadores (inclui Qualidade e SHE obrigatórios)
+--------------------------------------------------------- */
+let REGRA = {simplesAprov:3, complexoAprov:5, gatilhoSins:4};
+function calcComplexidade(av){
+  const sins = Object.keys(av||{}).filter(k=>av[k] && av[k].r==='sim');
+  const criticas = sins.filter(k=>(qById(k)||{}).critica).length;
+  const qualidade = sins.filter(k=>(qById(k)||{}).dim==='qual').length;
+  const complexo = sins.length >= REGRA.gatilhoSins || criticas > 0;
+  return {complexo, sins:sins.length, criticas, qualidade,
+          motivo: criticas>0 ? 'Resposta "Sim" em '+criticas+' questão(ões) crítica(s)' :
+                  sins.length>=REGRA.gatilhoSins ? sins.length+' impactos identificados (gatilho: '+REGRA.gatilhoSins+')' :
+                  'Nenhum impacto crítico identificado'};
+}
+
+/* ---------------- SLAs (configuráveis) ---------------- */
+let SLAS = [
+  {etapa:'Preenchimento inicial (rascunho → submissão)', dias:10,  tipo:'Ambos'},
+  {etapa:'Avaliação de impacto',                          dias:5,   tipo:'Ambos'},
+  {etapa:'Aprovação por aprovador (MOC simples)',         dias:5,   tipo:'Simples'},
+  {etapa:'Aprovação por aprovador (MOC complexo)',        dias:7,   tipo:'Complexo'},
+  {etapa:'Conclusão de item de ação',                     dias:30,  tipo:'Ambos'},
+  {etapa:'Janela total do MOC (início → encerramento)',   dias:90,  tipo:'Ambos'},
+  {etapa:'Lembrete automático antes do vencimento',       dias:2,   tipo:'Ambos'},
+];
+
+/* ---------------- aprovadores padrão (configurável) ---------------- */
+let CFG_APROV = [
+  {tipo:'Permanente', complexidade:'Simples',  papeis:['Aprovador para inicialização','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['eduardo','carlos','vania']},
+  {tipo:'Permanente', complexidade:'Complexo', papeis:['Aprovador para inicialização','Aprovador de Qualidade','Aprovador de SHE','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['eduardo','ana','vania','carlos','flavio']},
+  {tipo:'Temporário', complexidade:'Simples',  papeis:['Aprovador para inicialização','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['carlos','eduardo','vania']},
+  {tipo:'Temporário', complexidade:'Complexo', papeis:['Aprovador para inicialização','Aprovador de Qualidade','Aprovador de SHE','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['carlos','ana','vania','eduardo','flavio']},
+];
+const cfgFor = (tipo,complexo) => CFG_APROV.find(c=>c.tipo===tipo && c.complexidade===(complexo?'Complexo':'Simples')) || CFG_APROV[0];
+
+/* ---------------- datas ---------------- */
+const HOJE = new Date(2026,6,15); // 15/07/2026 — data da reunião de requisitos
+const d2s = d => [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+const s2d = s => new Date(s+'T00:00:00');
+const fmt = s => { if(!s) return '—'; const p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+const addDias = (s,n) => { const d=s2d(s); d.setDate(d.getDate()+n); return d2s(d); };
+const diffDias = (a,b) => Math.round((s2d(b)-s2d(a))/86400000);
+const HOJE_S = d2s(HOJE);
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+/* ---------------- status ---------------- */
+const STATUS = {
+  rascunho:  {lb:'Rascunho',              cls:'neutral', etapa:1},
+  conceito:  {lb:'Aprovação de conceito', cls:'info',    etapa:2},
+  aprovado:  {lb:'Aprovado',              cls:'ok',      etapa:3},
+  execucao:  {lb:'Em execução',           cls:'warn',    etapa:4},
+  concluido: {lb:'Concluído',             cls:'ok',      etapa:5},
+  rejeitado: {lb:'Rejeitado',             cls:'danger',  etapa:0},
+};
+const CICLO = ['Rascunho','Aprovação de conceito','Aprovado','Em execução','Concluído'];
+const ACST = {
+  aberta:    {lb:'Aberta',      cls:'neutral'},
+  andamento: {lb:'Em progresso',cls:'info'},
+  atrasada:  {lb:'Em atraso',   cls:'danger'},
+  concluida: {lb:'Concluída',   cls:'ok'},
+};
+
+/* ---------------- gerador determinístico ---------------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const rnd = mulberry32(20260715);
+const pick = arr => arr[Math.floor(rnd()*arr.length)];
+const ri = (a,b) => a+Math.floor(rnd()*(b-a+1));
+
+let SEQ = 16;
+function mocId(dateStr){ SEQ++; return 'MOC-'+dateStr.replace(/-/g,'')+'-'+String(SEQ).padStart(5,'0'); }
+function acId(mid,n){ return 'AC-'+mid+'-'+String(n).padStart(5,'0'); }
+
+/* ---------------- MOCs detalhados (vitrine) ---------------- */
+const MOCS = [];
+
+function mkAcoes(mid, av, base){
+  let n = 122;
+  return Object.keys(av).filter(k=>av[k].r==='sim').map(k=>{
+    const q = qById(k);
+    const venc = addDias(base, q.dias);
+    let st = av[k].status || 'aberta';
+    if(st!=='concluida' && diffDias(venc,HOJE_S)>0) st='atrasada';
+    n++;
+    return {id:acId(mid,n), qid:k, titulo:q.acao, desc:av[k].obs||'', resp:av[k].resp||q.resp,
+            venc, status:st, necessarioInicio: !!q.critica, concluidaEm: st==='concluida'?addDias(venc,-3):null};
+  });
+}
+function mkAprov(tipo, complexo, estados){
+  const cfg = cfgFor(tipo, complexo);
+  return cfg.papeis.map((papel,i)=>Object.assign({papel, pessoa:cfg.pessoas[i], status:'pendente'}, estados[i]||{}));
+}
+
+/* --- MOC 1: o caso mostrado na reunião (Virador de Pets Pacific 2) --- */
+(function(){
+  const base='2026-06-23';
+  const av={
+    q4:{r:'sim', obs:'Peças impressas em 3D em contato indireto com o frasco — validar material polimérico (grau alimentício).', resp:'ana', status:'aberta'},
+    q6:{r:'sim', obs:'Nova geometria exige revalidação do procedimento de limpeza do trecho.', resp:'ana', status:'andamento'},
+    q9:{r:'sim', obs:'Atualizar IT de operação do virador.', resp:'ana', status:'aberta'},
+    q14:{r:'sim', obs:'Garantir treinamento para coordenadores de turno e operadores III', resp:'marta', status:'concluida'},
+    q16:{r:'sim', obs:'Atualizar desenho mecânico do transportador/virador.', resp:'rogerio', status:'andamento'},
+    q1:{r:'nao'}, q2:{r:'nao'}, q3:{r:'nao'}, q5:{r:'nao'}, q7:{r:'nao'}, q8:{r:'nao'},
+    q10:{r:'nao'}, q11:{r:'nao'}, q12:{r:'nao'}, q13:{r:'nao'}, q15:{r:'nao'}, q17:{r:'nao'},
+  };
+  const id = 'MOC-20260623-00017';
+  MOCS.push({
+    id, tipo:'Permanente', status:'conceito',
+    titulo:'MOC - Novo Virador de Pets Pacific 2',
+    desc:'Substituição do sistema atual de viragem/transporte de potes PET (estrutura metálica) por um novo sistema com componentes fabricados em material polimérico (peças impressas em 3D), visando reduzir atrito no contato com os frascos.\nA alteração envolve modificação mecânica do trecho do transportador/virador, mantendo a mesma função operacional, porém com nova geometria e material.',
+    justificativa:'A mudança é proposta para reduzir enroscos e travamentos de potes na linha, causados pelo alto atrito do sistema metálico atual.\nCom o novo sistema, espera-se:\n- Redução de paradas por enrosco de frascos;\n- Aumento de eficiência da linha;\n- Redução de descartes de potes amassados;',
+    impactoSHE:'Safety/Health\nPositivo: Redução de intervenções manuais para desobstrução da linha.\n\nEnvironment\nPositivo: Redução de descarte dos pets.\n\nQuality\nAtenção: material polimérico em contato indireto com o frasco — requer validação de grau alimentício.',
+    tipoAlt:'Equipamento', impacto:'Médio', site:'Pouso Alegre', area:'Envase — Linha PET 2',
+    solicitante:'leo', responsavel:'leo', participantes:['leo','rogerio','ana','carlos'],
+    criado:base, dtIni:'2026-07-20', dtFim:'2026-09-15', concluido:null,
+    av, acoes:mkAcoes(id,av,base), complexo:true,
+    aprovacoes:mkAprov('Permanente',true,[
+      {status:'aprovado', em:'2026-07-02', obs:'De acordo com o conceito. Atentar ao plano de partida.'},
+      {status:'pendente', prazo:'2026-07-17'},
+      {status:'pendente', prazo:'2026-07-19'},
+      {status:'pendente'},{status:'pendente'},
+    ]),
+    anexos:[{n:'Desenho_Virador_Pacific2_rev2.pdf',t:'2,4 MB',por:'rogerio',em:'2026-06-24'},
+            {n:'Certificado_material_polimerico.pdf',t:'610 KB',por:'ana',em:'2026-06-28'},
+            {n:'APR_Virador_Pacific2.xlsx',t:'88 KB',por:'vania',em:'2026-06-25'}],
+  });
+})();
+
+/* --- demais MOCs de vitrine --- */
+const VITRINE = [
+  {base:'2026-06-02', tipo:'Permanente', status:'execucao', tit:'Troca de bomba dosadora — Preparo', site:'Pouso Alegre', area:'Preparo',
+   desc:'Substituição da bomba dosadora P-204 por modelo de diafragma com maior precisão de dosagem.',
+   just:'Bomba atual apresenta variação de dosagem acima do especificado, gerando retrabalho.',
+   she:'Quality\nAtenção: dosagem é parâmetro crítico de processo.', tipoAlt:'Equipamento', imp:'Alto',
+   sol:'leo', resp:'leo', part:['leo','ana','carlos'], ini:'2026-06-20', fim:'2026-08-10',
+   av:{q5:{r:'sim',status:'concluida'}, q9:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'andamento'}, q17:{r:'sim',status:'aberta'}},
+   apr:[{status:'aprovado',em:'2026-06-08'},{status:'aprovado',em:'2026-06-09'},{status:'aprovado',em:'2026-06-10'},{status:'aprovado',em:'2026-06-11'},{status:'aprovado',em:'2026-06-12'}]},
+
+  {base:'2026-05-18', tipo:'Temporário', status:'execucao', tit:'Bypass temporário do trocador de calor TC-02', site:'Pouso Alegre', area:'Utilidades',
+   desc:'Bypass temporário do trocador TC-02 durante manutenção corretiva, com controle manual de temperatura.',
+   just:'Manutenção corretiva do trocador exige parada de 21 dias; o bypass mantém a linha operando.',
+   she:'Safety/Health\nAtenção: controle manual de temperatura exige procedimento específico.', tipoAlt:'Processo', imp:'Alto',
+   sol:'rogerio', resp:'rogerio', part:['rogerio','eduardo','vania','ana'], ini:'2026-05-25', fim:'2026-07-10',
+   av:{q1:{r:'sim',status:'concluida'}, q2:{r:'sim',status:'concluida'}, q5:{r:'sim',status:'atrasada'}, q14:{r:'sim',status:'concluida'}},
+   apr:[{status:'aprovado',em:'2026-05-20'},{status:'aprovado',em:'2026-05-21'},{status:'aprovado',em:'2026-05-21'},{status:'aprovado',em:'2026-05-22'},{status:'aprovado',em:'2026-05-22'}]},
+
+  {base:'2026-06-30', tipo:'Permanente', status:'conceito', tit:'Novo fornecedor de tampa flip-top', site:'Pouso Alegre', area:'Envase — Linha PET 1',
+   desc:'Homologação de segundo fornecedor para tampa flip-top 28mm.',
+   just:'Reduzir dependência de fornecedor único e risco de desabastecimento.',
+   she:'Quality\nAtenção: alteração de material de embalagem primária — exige aprovação de cliente.', tipoAlt:'Material / Insumo', imp:'Médio',
+   sol:'carlos', resp:'ana', part:['carlos','ana','eduardo'], ini:'2026-08-01', fim:'2026-10-20',
+   av:{q4:{r:'sim',status:'aberta'}, q7:{r:'sim',status:'aberta'}, q8:{r:'sim',status:'aberta'}, q9:{r:'sim',status:'aberta'}},
+   apr:[{status:'aprovado',em:'2026-07-05'},{status:'pendente',prazo:'2026-07-16'},{status:'pendente',prazo:'2026-07-18'},{status:'pendente'},{status:'pendente'}]},
+
+  {base:'2026-07-06', tipo:'Temporário', status:'conceito', tit:'Instalação provisória de exaustor — Sala de Preparo', site:'Pouso Alegre', area:'Preparo',
+   desc:'Instalação de exaustor móvel durante obra de readequação do sistema de ventilação.',
+   just:'Manter conforto térmico e exaustão de vapores durante a obra (45 dias).',
+   she:'Safety/Health\nAtenção: exaustão de vapores de processo.', tipoAlt:'Infraestrutura', imp:'Médio',
+   sol:'rogerio', resp:'rogerio', part:['rogerio','vania','eduardo'], ini:'2026-07-25', fim:'2026-09-10',
+   av:{q1:{r:'sim',status:'aberta'}, q10:{r:'sim',status:'aberta'}, q14:{r:'sim',status:'aberta'}},
+   apr:[{status:'pendente',prazo:'2026-07-16'},{status:'pendente',prazo:'2026-07-16'},{status:'pendente',prazo:'2026-07-20'},{status:'pendente'},{status:'pendente'}]},
+
+  {base:'2026-07-09', tipo:'Permanente', status:'rascunho', tit:'Demolição de parede — Almoxarifado (ampliação)', site:'Pouso Alegre', area:'Almoxarifado',
+   desc:'Demolição de parede divisória para ampliação da área de armazenagem de insumos.',
+   just:'Ampliar capacidade de armazenagem e melhorar o fluxo de recebimento.',
+   she:'Environment\nAtenção: geração de entulho — necessária caçamba.', tipoAlt:'Infraestrutura', imp:'Médio',
+   sol:'leo', resp:'leo', part:['leo','vania','juliana'], ini:'2026-08-10', fim:'2026-09-30',
+   av:{q3:{r:'sim',status:'aberta'}, q10:{r:'sim',status:'aberta'}},
+   apr:[{status:'pendente'},{status:'pendente'},{status:'pendente'}]},
+
+  {base:'2026-04-14', tipo:'Permanente', status:'concluido', tit:'Automação do CIP da Linha PET 1', site:'Pouso Alegre', area:'Envase — Linha PET 1',
+   desc:'Automação do processo de limpeza CIP com controle por CLP e registro eletrônico de parâmetros.',
+   just:'Eliminar variabilidade da limpeza manual e gerar evidência automática para auditoria.',
+   she:'Quality\nPositivo: registro eletrônico dos parâmetros de limpeza.', tipoAlt:'Software / Automação', imp:'Alto',
+   sol:'rogerio', resp:'rogerio', part:['rogerio','ana','flavio','carlos'], ini:'2026-04-20', fim:'2026-06-30',
+   av:{q5:{r:'sim',status:'concluida'}, q6:{r:'sim',status:'concluida'}, q9:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'concluida'}, q16:{r:'sim',status:'concluida'}},
+   apr:[{status:'aprovado',em:'2026-04-16'},{status:'aprovado',em:'2026-04-17'},{status:'aprovado',em:'2026-04-17'},{status:'aprovado',em:'2026-04-18'},{status:'aprovado',em:'2026-06-30'}], concl:'2026-06-30'},
+
+  {base:'2026-03-10', tipo:'Temporário', status:'concluido', tit:'Uso temporário de sanitizante alternativo', site:'Pouso Alegre', area:'Preparo',
+   desc:'Uso de sanitizante alternativo (ácido peracético) durante desabastecimento do produto padrão.',
+   just:'Desabastecimento do fornecedor padrão por 60 dias.',
+   she:'Chemicals\nAtenção: novo químico — FISPQ e EPI específicos.', tipoAlt:'Material / Insumo', imp:'Alto',
+   sol:'ana', resp:'ana', part:['ana','vania','juliana','carlos'], ini:'2026-03-15', fim:'2026-05-20',
+   av:{q6:{r:'sim',status:'concluida'}, q12:{r:'sim',status:'concluida'}, q13:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'concluida'}},
+   apr:[{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-05-20'}], concl:'2026-05-18'},
+
+  {base:'2026-02-02', tipo:'Permanente', status:'rejeitado', tit:'Redução do tempo de enxágue pós-CIP', site:'Pouso Alegre', area:'Envase — Linha PET 2',
+   desc:'Proposta de redução do tempo de enxágue final de 12 para 7 minutos.',
+   just:'Ganho de 18 minutos por ciclo de limpeza, aumentando a disponibilidade da linha.',
+   she:'Quality\nRisco: possível resíduo de sanitizante.', tipoAlt:'Processo', imp:'Alto',
+   sol:'carlos', resp:'carlos', part:['carlos','ana','eduardo'], ini:'2026-02-20', fim:'2026-04-01',
+   av:{q5:{r:'sim',status:'aberta'}, q6:{r:'sim',status:'aberta'}},
+   apr:[{status:'aprovado',em:'2026-02-05'},{status:'rejeitado',em:'2026-02-09',obs:'Sem estudo de resíduo de sanitizante que comprove ausência de risco. Reprovado — reapresentar com laudo de análise de resíduo em 3 lotes consecutivos.'},{status:'pendente'},{status:'pendente'},{status:'pendente'}]},
+
+  {base:'2026-05-05', tipo:'Permanente', status:'execucao', tit:'Nova esteira de transferência — Garanhuns', site:'Garanhuns', area:'Linha 1 — Sabonetes',
+   desc:'Instalação de esteira de transferência entre corte e embalagem.',
+   just:'Eliminar transporte manual entre setores.',
+   she:'Safety/Health\nPositivo: redução de movimentação manual de carga.', tipoAlt:'Equipamento', imp:'Médio',
+   sol:'silvia', resp:'silvia', part:['silvia','eduardo'], ini:'2026-05-20', fim:'2026-08-15',
+   av:{q1:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'andamento'}, q16:{r:'sim',status:'atrasada'}},
+   apr:[{status:'aprovado',em:'2026-05-08'},{status:'aprovado',em:'2026-05-09'},{status:'aprovado',em:'2026-05-10'},{status:'aprovado',em:'2026-05-11'},{status:'aprovado',em:'2026-05-12'}]},
+
+  {base:'2026-06-11', tipo:'Temporário', status:'execucao', tit:'Operação com 1 caldeira durante manutenção', site:'Pouso Alegre', area:'Caldeira',
+   desc:'Operação com caldeira única (CB-01) durante manutenção preventiva da CB-02.',
+   just:'Manutenção preventiva anual obrigatória (NR-13).',
+   she:'Safety/Health\nAtenção: NR-13, operação com redundância reduzida.', tipoAlt:'Processo', imp:'Alto',
+   sol:'eduardo', resp:'eduardo', part:['eduardo','rogerio','vania'], ini:'2026-06-20', fim:'2026-07-25',
+   av:{q1:{r:'sim',status:'concluida'}, q2:{r:'sim',status:'concluida'}, q3:{r:'sim',status:'andamento'}, q17:{r:'sim',status:'aberta'}},
+   apr:[{status:'aprovado',em:'2026-06-13'},{status:'aprovado',em:'2026-06-13'},{status:'aprovado',em:'2026-06-14'},{status:'aprovado',em:'2026-06-15'},{status:'aprovado',em:'2026-06-15'}]},
+
+  {base:'2026-01-20', tipo:'Permanente', status:'concluido', tit:'Substituição de lâmpadas por LED — Expedição', site:'Pouso Alegre', area:'Expedição',
+   desc:'Troca de luminárias fluorescentes por LED na área de expedição.',
+   just:'Redução de consumo de energia e melhoria de luminosidade.',
+   she:'Environment\nPositivo: redução de consumo e de resíduo de lâmpada.', tipoAlt:'Infraestrutura', imp:'Baixo',
+   sol:'rogerio', resp:'rogerio', part:['rogerio','juliana'], ini:'2026-02-01', fim:'2026-03-15',
+   av:{q10:{r:'sim',status:'concluida'}},
+   apr:[{status:'aprovado',em:'2026-01-22'},{status:'aprovado',em:'2026-01-23'},{status:'aprovado',em:'2026-03-15'}], concl:'2026-03-12'},
+
+  {base:'2026-04-28', tipo:'Permanente', status:'concluido', tit:'Alteração de layout — recebimento de insumos', site:'Garanhuns', area:'Almoxarifado',
+   desc:'Reorganização do layout de recebimento com nova rota de empilhadeira.',
+   just:'Separar fluxo de pedestre e empilhadeira.',
+   she:'Safety/Health\nPositivo: segregação de fluxo pedestre × empilhadeira.', tipoAlt:'Infraestrutura', imp:'Médio',
+   sol:'silvia', resp:'silvia', part:['silvia','vania'], ini:'2026-05-05', fim:'2026-06-25',
+   av:{q1:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'concluida'}, q16:{r:'sim',status:'concluida'}},
+   apr:[{status:'aprovado',em:'2026-04-30'},{status:'aprovado',em:'2026-05-01'},{status:'aprovado',em:'2026-05-02'},{status:'aprovado',em:'2026-05-02'},{status:'aprovado',em:'2026-06-25'}], concl:'2026-06-22'},
+];
+
+VITRINE.forEach(v=>{
+  const id = mocId(v.base);
+  const complexo = calcComplexidade(v.av).complexo;
+  const avFull = Object.assign({}, v.av);
+  QUESTOES.forEach(q=>{ if(!avFull[q.id]) avFull[q.id]={r:'nao'}; });
+  MOCS.push({
+    id, tipo:v.tipo, status:v.status, titulo:v.tit, desc:v.desc, justificativa:v.just, impactoSHE:v.she,
+    tipoAlt:v.tipoAlt, impacto:v.imp, site:v.site, area:v.area,
+    solicitante:v.sol, responsavel:v.resp, participantes:v.part,
+    criado:v.base, dtIni:v.ini, dtFim:v.fim, concluido:v.concl||null,
+    av:avFull, acoes:mkAcoes(id,v.av,v.base), complexo,
+    aprovacoes:mkAprov(v.tipo,complexo,v.apr),
+    anexos:[{n:'Escopo_'+id+'.pdf',t:ri(300,1800)+' KB',por:v.sol,em:v.base}],
+  });
+});
+
+/* ---------------- base histórica p/ o BI (2020 → 2026) ---------------- */
+const HIST = [];
+(function(){
+  const sols = ['leo','rogerio','carlos','ana','eduardo','silvia','vania'];
+  for(let y=2020;y<=2026;y++){
+    const maxM = y===2026 ? 6 : 11;
+    for(let m=0;m<=maxM;m++){
+      const qtd = ri(4,11) + (y>=2024?2:0);
+      for(let i=0;i<qtd;i++){
+        const loc = rnd()<0.78 ? {site:'Pouso Alegre',area:pick(AREAS['Pouso Alegre'])} : {site:'Garanhuns',area:pick(AREAS['Garanhuns'])};
+        const complexo = rnd()<0.42;
+        const criado = d2s(new Date(y,m,ri(1,27)));
+        const prazo = addDias(criado, complexo?110:80);
+        const dur = ri(25,140);
+        const cd = s2d(criado); cd.setDate(cd.getDate()+dur);
+        const conclReal = d2s(cd);
+        const ativo = diffDias(conclReal,HOJE_S) < 0;
+        const rej = !ativo && rnd()<0.05;
+        HIST.push({
+          id:'MOC-'+criado.replace(/-/g,'')+'-'+String(90000+HIST.length).padStart(5,'0'),
+          criado, prazo, concluido: ativo?null:(rej?null:conclReal),
+          status: ativo ? (rnd()<0.45?'conceito':(rnd()<0.6?'execucao':'rascunho')) : (rej?'rejeitado':'concluido'),
+          atraso: ativo ? diffDias(prazo,HOJE_S)>0 : (!rej && diffDias(prazo,conclReal)>0),
+          site:loc.site, area:loc.area, complexo, tipo: rnd()<0.62?'Permanente':'Temporário',
+          solicitante: pick(sols), impactos: DIMS.filter(()=>rnd()<0.34).map(d=>d.id),
+          acoes: ri(0,5), acoesAbertas: ativo?ri(0,3):0,
+        });
+      }
+    }
+  }
+})();
+
+/* MOCs detalhados também entram no universo do BI */
+function universo(){
+  const det = MOCS.map(m=>{
+    const prazo = addDias(m.criado, m.complexo?110:80);
+    return {
+      id:m.id, criado:m.criado, prazo, concluido:m.concluido||null, status:m.status,
+      atraso: m.status==='concluido' ? (m.concluido && diffDias(prazo,m.concluido)>0)
+            : m.status==='rejeitado' ? false : diffDias(prazo,HOJE_S)>0,
+      site:m.site, area:m.area, complexo:m.complexo, tipo:m.tipo, solicitante:m.solicitante,
+      impactos:[...new Set(Object.keys(m.av).filter(k=>m.av[k].r==='sim').map(k=>qById(k).dim))],
+      acoes:m.acoes.length, acoesAbertas:m.acoes.filter(a=>a.status!=='concluida').length, det:true,
+    };
+  });
+  return det.concat(HIST);
+}
+
+/* ---------------- estado da sessão ---------------- */
+let ROLE = 'admin';
+let USER = 'vania';
+let VIEW = 'home';
+let CURRENT = null;      // MOC aberto
+let MOCTAB = 'inicio';   // aba do detalhe
+let WIZ = null;          // rascunho do wizard
+const EMAILS = [];       // caixa de saída simulada
+
+
+/* ============================================================
+   NÚCLEO — login, perfis, roteamento, utilitários de UI
+   ============================================================ */
+
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const el = id => document.getElementById(id);
+
+function toast(msg, kind){
+  const t = el('toast');
+  t.className = ''; t.textContent = msg;
+  if(kind) t.classList.add(kind);
+  t.classList.add('on');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('on'), 3200);
+}
+
+function modal(title, body, footer, wide){
+  el('modalHost').innerHTML =
+    '<div class="ovl" onclick="if(event.target===this)closeModal()">'+
+      '<div class="modal"'+(wide?' style="max-width:760px"':'')+'>'+
+        '<div class="modal-h"><h3>'+esc(title)+'</h3><button class="x" onclick="closeModal()">&times;</button></div>'+
+        '<div class="modal-b">'+body+'</div>'+
+        (footer?'<div class="modal-f">'+footer+'</div>':'')+
+      '</div></div>';
+}
+const closeModal = () => el('modalHost').innerHTML='';
+
+/* ---------------- login / perfis ---------------- */
+const ROLE_USER = {admin:'vania', solicitante:'leo', aprovador:'ana', viewer:'tamires'};
+const ROLE_LB = {admin:'Administrador Master', solicitante:'Solicitante', aprovador:'Aprovador', viewer:'Visualizador (somente leitura)'};
+
+function doLogin(){
+  setRole(el('lgRole').value, true);
+  const lg = el('login');
+  lg.style.opacity = 0;
+  setTimeout(()=>lg.classList.add('hidden'), 500);
+  switchView('home');
+}
+
+function setRole(r, silent){
+  ROLE = r; USER = ROLE_USER[r];
+  el('roleSel').value = r;
+  el('avatar').textContent = initials(pName(USER));
+  el('avatar').title = pName(USER)+' · '+ROLE_LB[r];
+  document.body.classList.toggle('is-viewer', r==='viewer');
+  // esconde escrita para o visualizador
+  const st = document.getElementById('permStyle') || (()=>{const s=document.createElement('style');s.id='permStyle';document.head.appendChild(s);return s})();
+  st.textContent = r==='viewer' ? '.perm-w{display:none!important}' : '';
+  if(!silent){ toast('Perfil: '+ROLE_LB[r]+' — '+pName(USER)); render(); }
+}
+
+/* ---------------- roteamento ---------------- */
+const TITLES = {
+  home:['Visão Geral','Início'],
+  meus:['Visão Geral','Meus MOCs'],
+  aprovar:['Visão Geral','MOCs para Aprovar'],
+  novo:['Módulo 1 · Gestão de MOC','Adicionar novo MOC'],
+  moc:['Módulo 1 · Gestão de MOC','Detalhe do MOC'],
+  acoes:['Módulo 1 · Gestão de MOC','Itens de Ação'],
+  notif:['Módulo 1 · Gestão de MOC','Notificações de E-mail'],
+  escopo:['Módulo 1 · Gestão de MOC','Escopo da Solução'],
+  painel:['Módulo 2 · Painel Analítico','Painel de MOCs'],
+  'cfg-quest':['Configuração','Questionário de Impacto'],
+  'cfg-aprov':['Configuração','Aprovadores Padrão'],
+  'cfg-sla':['Configuração','SLAs e Prazos'],
+  'admin-users':['Administração','Usuários e Acessos'],
+  ajuda:['Administração','Manual do Sistema'],
+};
+
+function switchView(v){
+  VIEW = v;
+  const t = TITLES[v] || ['',''];
+  el('crumb').textContent = t[0]; el('title').textContent = t[1];
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===v));
+  document.getElementById('sidebar').classList.remove('open');
+  render();
+  window.scrollTo({top:0});
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click', ()=>{
+  if(n.dataset.view==='novo') novoMOC(); else switchView(n.dataset.view);
+}));
+
+function render(){
+  const v = el('view');
+  const R = {
+    home:vHome, meus:vMeus, aprovar:vAprovar, novo:vWizard, moc:vMOC, acoes:vAcoes, notif:vNotif,
+    escopo:vEscopo, painel:vPainel, 'cfg-quest':vCfgQuest, 'cfg-aprov':vCfgAprov, 'cfg-sla':vCfgSla,
+    'admin-users':vUsers, ajuda:vAjuda,
+  };
+  v.innerHTML = (R[VIEW]||vHome)();
+  if(VIEW==='painel') drawPainel();
+  if(VIEW==='home') drawHome();
+  updateBadges();
+}
+
+function updateBadges(){
+  const n = pendentesDe(USER).length;
+  const b = el('apBadge');
+  b.textContent = n; b.style.display = n ? '' : 'none';
+}
+
+/* ---------------- consultas ---------------- */
+const byId = id => MOCS.find(m=>m.id===id);
+function proximoAprovador(m){ return m.aprovacoes.find(a=>a.status==='pendente'); }
+function pendentesDe(uid){
+  if(ROLE==='viewer') return [];
+  return MOCS.filter(m=>{
+    if(m.status!=='conceito') return false;
+    const p = proximoAprovador(m);
+    return p && p.pessoa===uid;
+  });
+}
+function meusMOCs(uid){
+  if(ROLE==='admin' || ROLE==='viewer') return MOCS;
+  return MOCS.filter(m=>m.solicitante===uid || m.responsavel===uid || (m.participantes||[]).includes(uid));
+}
+const acoesAbertas = m => m.acoes.filter(a=>a.status!=='concluida');
+function slaAprovStatus(a){
+  if(!a.prazo) return null;
+  const d = diffDias(HOJE_S, a.prazo);
+  if(d<0) return {cls:'danger', lb:'Vencido há '+Math.abs(d)+'d'};
+  if(d<=slaLembrete()) return {cls:'warn', lb:'Vence em '+d+'d'};
+  return {cls:'ok', lb:'No prazo ('+d+'d)'};
+}
+const slaLembrete = () => (SLAS.find(s=>s.etapa.indexOf('Lembrete')===0)||{dias:2}).dias;
+function mocAtrasado(m){
+  if(m.status==='concluido'||m.status==='rejeitado') return false;
+  return diffDias(HOJE_S, m.dtFim) < 0;
+}
+
+/* ---------------- componentes reutilizáveis ---------------- */
+function stPill(s){ const x=STATUS[s]||{lb:s,cls:'neutral'}; return '<span class="pill '+x.cls+'">'+x.lb+'</span>'; }
+function acPill(s){ const x=ACST[s]||{lb:s,cls:'neutral'}; return '<span class="pill '+x.cls+'">'+x.lb+'</span>'; }
+function cxPill(c){ return c ? '<span class="pill danger">Complexo · '+REGRA.complexoAprov+' aprovadores</span>'
+                             : '<span class="pill ok">Simples · '+REGRA.simplesAprov+' aprovadores</span>'; }
+function avatarChip(uid){
+  return '<span style="display:inline-flex;align-items:center;gap:7px">'+
+    '<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand-deep);display:grid;place-items:center;font-size:9.5px;font-weight:700;flex:none">'+initials(pName(uid))+'</span>'+
+    esc(pName(uid))+'</span>';
+}
+function tblMOCs(list, opts){
+  opts = opts||{};
+  if(!list.length) return '<div class="pad muted" style="text-align:center;padding:34px">Nenhum MOC encontrado.</div>';
+  return '<div class="tbl-wrap"><table><thead><tr>'+
+    '<th>MOC</th><th>Título</th><th>Tipo</th><th>Local / Área</th><th>Responsável</th>'+
+    '<th>Status</th><th>Complexidade</th><th>Ações abertas</th><th>Prazo</th>'+
+    '</tr></thead><tbody>'+
+    list.map(m=>{
+      const ab = acoesAbertas(m).length;
+      const atr = mocAtrasado(m);
+      return '<tr class="clk" onclick="abrirMOC(\''+m.id+'\')">'+
+        '<td class="mono" style="font-size:11.5px;font-weight:700;color:var(--brand);white-space:nowrap">'+m.id+'</td>'+
+        '<td style="font-weight:600;min-width:210px">'+esc(m.titulo)+'</td>'+
+        '<td>'+m.tipo+'</td>'+
+        '<td class="tiny">'+esc(m.site)+'<br>'+esc(m.area)+'</td>'+
+        '<td>'+avatarChip(m.responsavel)+'</td>'+
+        '<td>'+stPill(m.status)+'</td>'+
+        '<td>'+(m.complexo?'<span class="pill danger">Complexo</span>':'<span class="pill ok">Simples</span>')+'</td>'+
+        '<td>'+(ab?'<span class="pill warn">'+ab+' aberta'+(ab>1?'s':'')+'</span>':'<span class="pill ok">0</span>')+'</td>'+
+        '<td class="tiny'+(atr?' ':'')+'">'+fmt(m.dtFim)+(atr?'<br><span class="pill danger">Em atraso</span>':'')+'</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function globalSearchGo(q){
+  if(!q || q.length<2) return;
+  const hit = MOCS.filter(m=>(m.id+' '+m.titulo).toLowerCase().includes(q.toLowerCase()));
+  if(hit.length===1 && q.length>4) abrirMOC(hit[0].id);
+}
+
+/* ============================================================
+   TELA: INÍCIO
+   ============================================================ */
+function vHome(){
+  const meus = meusMOCs(USER);
+  const pend = pendentesDe(USER);
+  const abertos = meus.filter(m=>['rascunho','conceito','aprovado','execucao'].includes(m.status));
+  const atrasados = meus.filter(mocAtrasado);
+  const acoesMinhas = MOCS.flatMap(m=>m.acoes.filter(a=>a.resp===USER && a.status!=='concluida').map(a=>({a,m})));
+
+  return '<div class="stat-grid">'+
+    '<div class="stat"><span class="bar"></span><div class="lb">MOCs em andamento</div><div class="vl">'+abertos.length+'</div><div class="sub">'+(ROLE==='admin'?'todos os MOCs da unidade':'onde você participa')+'</div></div>'+
+    '<div class="stat y"><span class="bar"></span><div class="lb">Aguardando você</div><div class="vl">'+pend.length+'</div><div class="sub">'+(pend.length?'aprovação pendente':'nada pendente')+'</div></div>'+
+    '<div class="stat r"><span class="bar"></span><div class="lb">Em atraso</div><div class="vl">'+atrasados.length+'</div><div class="sub">fora da janela do MOC</div></div>'+
+    '<div class="stat g"><span class="bar"></span><div class="lb">Minhas ações abertas</div><div class="vl">'+acoesMinhas.length+'</div><div class="sub">itens sob sua responsabilidade</div></div>'+
+  '</div>'+
+
+  '<div class="grid2" style="align-items:start">'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div class="section-title">Aguardando sua aprovação</div>'+
+        '<button class="btn ghost sm" onclick="switchView(\'aprovar\')">Ver todos</button></div>'+
+      (pend.length ? pend.map(m=>{
+        const a = proximoAprovador(m); const s = slaAprovStatus(a);
+        return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:9px;cursor:pointer" onclick="abrirMOC(\''+m.id+'\')">'+
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+            '<span class="mono" style="font-size:11px;font-weight:700;color:var(--brand)">'+m.id+'</span>'+
+            (s?'<span class="pill '+s.cls+'">'+s.lb+'</span>':'')+
+            (m.complexo?'<span class="pill danger">Complexo</span>':'<span class="pill ok">Simples</span>')+
+          '</div>'+
+          '<div style="font-weight:700;font-size:13.5px;margin:5px 0 3px">'+esc(m.titulo)+'</div>'+
+          '<div class="tiny">Seu papel: <b>'+esc(a.papel)+'</b> · Solicitante: '+esc(pName(m.solicitante))+'</div>'+
+        '</div>';
+      }).join('') : '<div class="muted" style="padding:24px;text-align:center">Nenhum MOC aguardando sua aprovação.</div>')+
+    '</div>'+
+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div class="section-title">Minhas ações abertas</div>'+
+        '<button class="btn ghost sm" onclick="switchView(\'acoes\')">Ver todas</button></div>'+
+      (acoesMinhas.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>MOC</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>'+
+        acoesMinhas.slice(0,6).map(x=>'<tr class="clk" onclick="abrirMOC(\''+x.m.id+'\',\'acoes\')">'+
+          '<td style="font-weight:600">'+esc(x.a.titulo)+(x.a.necessarioInicio?' <span class="pill danger" style="font-size:9px">bloqueia início</span>':'')+'</td>'+
+          '<td class="tiny mono">'+x.m.id.slice(-5)+'</td>'+
+          '<td class="tiny">'+fmt(x.a.venc)+'</td>'+
+          '<td>'+acPill(x.a.status)+'</td></tr>').join('')+
+        '</tbody></table></div>'
+      : '<div class="muted" style="padding:24px;text-align:center">Nenhuma ação sob sua responsabilidade.</div>')+
+    '</div>'+
+  '</div>'+
+
+  '<div class="grid2" style="margin-top:16px;align-items:start">'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div class="section-title">MOCs por etapa do ciclo</div><span class="tiny">atualizado agora</span></div>'+
+      '<div id="homeCiclo"></div>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div class="section-title">Atividade recente</div></div>'+
+      '<div class="tl">'+feedRecente()+'</div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="card pad" style="margin-top:16px">'+
+    '<div class="panel-head"><div class="section-title">MOCs recentes</div>'+
+      '<button class="btn perm-w" onclick="novoMOC()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> Adicionar novo MOC</button></div>'+
+    tblMOCs(meus.slice(0,7))+
+  '</div>';
+}
+
+function feedRecente(){
+  const ev = [];
+  MOCS.forEach(m=>{
+    m.aprovacoes.filter(a=>a.em).forEach(a=>ev.push({d:a.em, cls:a.status==='aprovado'?'ok':'no',
+      w:(a.status==='aprovado'?'Aprovado por ':'Rejeitado por ')+pName(a.pessoa), m:m.id+' · '+m.titulo}));
+    m.acoes.filter(a=>a.concluidaEm).forEach(a=>ev.push({d:a.concluidaEm, cls:'ok', w:'Ação concluída — '+a.titulo, m:m.id}));
+    ev.push({d:m.criado, cls:'', w:'MOC criado por '+pName(m.solicitante), m:m.id+' · '+m.titulo});
+  });
+  return ev.sort((a,b)=>b.d.localeCompare(a.d)).slice(0,7).map(e=>
+    '<div class="tl-i '+e.cls+'"><div class="w">'+esc(e.w)+'</div><div class="d">'+fmt(e.d)+'</div><div class="m">'+esc(e.m)+'</div></div>'
+  ).join('');
+}
+
+function drawHome(){
+  const host = el('homeCiclo'); if(!host) return;
+  const cont = CICLO.map(c=>({lb:c, n:MOCS.filter(m=>(STATUS[m.status]||{}).lb===c).length}));
+  const max = Math.max(1, ...cont.map(c=>c.n));
+  host.innerHTML = cont.map(c=>
+    '<div style="margin-bottom:11px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:4px">'+
+        '<span>'+c.lb+'</span><span class="mono">'+c.n+'</span></div>'+
+      '<div style="height:9px;background:#eef2f6;border-radius:99px;overflow:hidden">'+
+        '<div style="height:100%;width:'+(c.n/max*100)+'%;background:linear-gradient(90deg,var(--brand),var(--brand-2));border-radius:99px;transition:width .6s"></div>'+
+      '</div></div>').join('');
+}
+
+/* ============================================================
+   TELAS: LISTAS
+   ============================================================ */
+let fMeus = {status:'', site:'', tipo:'', q:''};
+function vMeus(){
+  let list = meusMOCs(USER);
+  if(fMeus.status) list = list.filter(m=>m.status===fMeus.status);
+  if(fMeus.site)   list = list.filter(m=>m.site===fMeus.site);
+  if(fMeus.tipo)   list = list.filter(m=>m.tipo===fMeus.tipo);
+  if(fMeus.q)      list = list.filter(m=>(m.id+' '+m.titulo+' '+m.area).toLowerCase().includes(fMeus.q.toLowerCase()));
+
+  return '<div class="filters">'+
+    '<span class="lb">Filtros</span>'+
+    '<select onchange="fMeus.status=this.value;render()">'+opt(['','rascunho','conceito','aprovado','execucao','concluido','rejeitado'], fMeus.status, v=>v?STATUS[v].lb:'Todos os status')+'</select>'+
+    '<select onchange="fMeus.site=this.value;render()">'+opt([''].concat(SITES), fMeus.site, v=>v||'Todas as unidades')+'</select>'+
+    '<select onchange="fMeus.tipo=this.value;render()">'+opt(['','Permanente','Temporário'], fMeus.tipo, v=>v||'Todos os tipos')+'</select>'+
+    '<input type="text" style="width:210px" placeholder="Buscar por título ou número" value="'+esc(fMeus.q)+'" oninput="fMeus.q=this.value;clearTimeout(window._fq);window._fq=setTimeout(render,250)">'+
+    '<div class="spacer"></div>'+
+    '<button class="btn ghost sm" onclick="exportar(\'MOCs\')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exportar</button>'+
+    '<button class="btn sm perm-w" onclick="novoMOC()">+ Novo MOC</button>'+
+  '</div>'+
+  '<div class="card">'+tblMOCs(list)+'</div>'+
+  '<div class="tiny" style="margin-top:10px">'+list.length+' MOC(s) · '+(ROLE==='admin'?'perfil Admin enxerga todos os MOCs da unidade':'você vê os MOCs em que participa')+'</div>';
+}
+function opt(vals, sel, lb){
+  return vals.map(v=>'<option value="'+esc(v)+'"'+(v===sel?' selected':'')+'>'+esc(lb?lb(v):v)+'</option>').join('');
+}
+
+function vAprovar(){
+  const pend = pendentesDe(USER);
+  if(ROLE==='viewer') return '<div class="card pad muted" style="text-align:center;padding:50px">O perfil <b>Visualizador</b> não aprova MOCs — acesso somente leitura.</div>';
+  const grp = {venc:[], prox:[], ok:[]};
+  pend.forEach(m=>{
+    const a = proximoAprovador(m); const s = slaAprovStatus(a);
+    if(!s) grp.ok.push({m,a,s}); else if(s.cls==='danger') grp.venc.push({m,a,s}); else if(s.cls==='warn') grp.prox.push({m,a,s}); else grp.ok.push({m,a,s});
+  });
+  const bloco = (t, arr, cls) => arr.length ? '<div class="card pad" style="margin-bottom:16px">'+
+      '<div class="panel-head"><div class="section-title">'+t+' <span class="pill '+cls+'">'+arr.length+'</span></div></div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>MOC</th><th>Título</th><th>Solicitante</th><th>Submetido</th><th>Seu papel</th><th>Prazo</th><th></th></tr></thead><tbody>'+
+      arr.map(x=>'<tr>'+
+        '<td class="mono" style="font-size:11.5px;font-weight:700;color:var(--brand)">'+x.m.id+'</td>'+
+        '<td style="font-weight:600">'+esc(x.m.titulo)+' '+(x.m.complexo?'<span class="pill danger" style="font-size:9px">Complexo</span>':'')+'</td>'+
+        '<td>'+avatarChip(x.m.solicitante)+'</td>'+
+        '<td class="tiny">'+fmt(x.m.criado)+'</td>'+
+        '<td class="tiny"><b>'+esc(x.a.papel)+'</b></td>'+
+        '<td>'+(x.s?'<span class="pill '+x.s.cls+'">'+x.s.lb+'</span>':'<span class="tiny">—</span>')+'</td>'+
+        '<td style="white-space:nowrap"><button class="btn ghost sm" onclick="abrirMOC(\''+x.m.id+'\')">Visualizar</button> '+
+          '<button class="btn ok sm perm-w" onclick="decidir(\''+x.m.id+'\',\'aprovado\')">Aprovar</button> '+
+          '<button class="btn danger sm perm-w" onclick="decidir(\''+x.m.id+'\',\'rejeitado\')">Rejeitar</button></td>'+
+      '</tr>').join('')+'</tbody></table></div></div>' : '';
+
+  return (pend.length ? '' : '<div class="card pad muted" style="text-align:center;padding:50px">Nenhum MOC aguardando sua aprovação. <br><span class="tiny">Troque o perfil no topo para ver a fila de outro aprovador.</span></div>')+
+    bloco('Vencidos', grp.venc, 'danger')+
+    bloco('Próximos do vencimento', grp.prox, 'warn')+
+    bloco('No prazo', grp.ok, 'ok');
+}
+
+/* ============================================================
+   TELA: DETALHE DO MOC (espelha a navegação do sistema atual)
+   ============================================================ */
+function abrirMOC(id, tab){ CURRENT = id; MOCTAB = tab||'inicio'; switchView('moc'); }
+function mocTab(t){ MOCTAB = t; render(); }
+
+function vMOC(){
+  const m = byId(CURRENT);
+  if(!m) return '<div class="card pad">MOC não encontrado.</div>';
+  const st = STATUS[m.status];
+  const ab = acoesAbertas(m).length;
+  const tabs = [
+    ['inicio','Início'], ['impacto','Avaliação de impacto'], ['aprov','Aprovações'],
+    ['acoes','Itens de ação'], ['anexos','Anexos'], ['emails','Notificações de E-mail'], ['trilha','Trilha da Auditoria'],
+  ];
+  const cnt = {acoes:m.acoes.length, anexos:m.anexos.length, aprov:m.aprovacoes.length, emails:emailsDe(m.id).length};
+  const pane = {inicio:paneInicio, impacto:paneImpacto, aprov:paneAprov, acoes:paneAcoes, anexos:paneAnexos, emails:paneEmails, trilha:paneTrilha}[MOCTAB](m);
+
+  return '<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="switchView(\'meus\')">← Voltar para a lista</button></div>'+
+  '<div class="card" style="overflow:visible">'+
+    '<div class="moc-hd">'+
+      '<div><div class="t">Alteração '+(m.tipo==='Permanente'?'permanente':'temporária')+' <span class="st">('+st.lb.toUpperCase()+')</span></div>'+
+      '<div style="font-size:12.5px;opacity:.92;margin-top:2px">'+esc(m.titulo)+'</div></div>'+
+      '<div class="spacer"></div>'+
+      (m.status==='rascunho' ? '<button class="btn perm-w" style="background:#fff;color:var(--brand)" onclick="submeter(\''+m.id+'\')">Enviar para Aprov.</button>' : '')+
+      (m.status==='conceito' && proximoAprovador(m) && proximoAprovador(m).pessoa===USER ?
+        '<button class="btn ok perm-w" onclick="decidir(\''+m.id+'\',\'aprovado\')">Aprovar</button>'+
+        '<button class="btn danger perm-w" onclick="decidir(\''+m.id+'\',\'rejeitado\')">Rejeitar</button>' : '')+
+      (m.status==='execucao' ? '<button class="btn perm-w" style="background:#fff;color:var(--brand)" onclick="encerrar(\''+m.id+'\')">Encerrar MOC</button>' : '')+
+    '</div>'+
+    '<div class="moc-body">'+
+      '<div class="moc-nav">'+
+        '<div class="id">'+m.id+'</div>'+
+        '<div class="sm">'+esc(m.titulo)+'<br>Ação requisitada por:<br><b>'+esc(pName(m.solicitante))+'</b></div>'+
+        tabs.map(t=>'<div class="moc-nav-item'+(MOCTAB===t[0]?' active':'')+'" onclick="mocTab(\''+t[0]+'\')">'+t[1]+
+          (cnt[t[0]]?'<span class="cnt">'+cnt[t[0]]+'</span>':'')+'</div>').join('')+
+      '</div>'+
+      '<div class="moc-pane">'+pane+'</div>'+
+    '</div>'+
+  '</div>'+
+  (ab && m.status!=='concluido' ? '<div class="note" style="border-left-color:var(--warn);background:var(--warn-soft);margin-top:14px"><b>MOC não pode ser encerrado:</b> existem '+ab+' item(ns) de ação em aberto. O encerramento só é liberado quando todas as ações estiverem concluídas.</div>' : '');
+}
+
+function paneInicio(m){
+  return '<div class="sec-h">Descrição</div>'+
+    '<div class="fld"><span class="fld-l">Título</span><div class="ro-box">'+esc(m.titulo)+'</div></div>'+
+    '<div class="fld"><span class="fld-l">Descrição de alteração</span><div class="ro-box">'+esc(m.desc)+'</div></div>'+
+    '<div class="fld"><span class="fld-l">Justificação para alteração</span><div class="ro-box">'+esc(m.justificativa)+'</div></div>'+
+    '<div class="fld"><span class="fld-l">Impacto da alteração no SHE</span><div class="ro-box">'+esc(m.impactoSHE)+'</div></div>'+
+    '<div class="sec-h">Parte inicial do projeto</div>'+
+    '<dl class="kv">'+
+      '<dt>Tipo de MOC</dt><dd>'+m.tipo+'</dd>'+
+      '<dt>Tipo de alteração</dt><dd>'+esc(m.tipoAlt)+'</dd>'+
+      '<dt>Impacto associado</dt><dd>'+esc(m.impacto)+'</dd>'+
+      '<dt>Unidade</dt><dd>'+esc(m.site)+'</dd>'+
+      '<dt>Onde acontece (área)</dt><dd>'+esc(m.area)+'</dd>'+
+      '<dt>Solicitante</dt><dd>'+avatarChip(m.solicitante)+'</dd>'+
+      '<dt>Responsável</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
+      '<dt>Pessoas presentes</dt><dd>'+m.participantes.map(p=>'<span class="pill neutral" style="margin:2px 3px 2px 0">'+esc(pName(p))+'</span>').join('')+'</dd>'+
+      '<dt>Início planejado</dt><dd>'+fmt(m.dtIni)+'</dd>'+
+      '<dt>Conclusão planejada</dt><dd>'+fmt(m.dtFim)+' '+(mocAtrasado(m)?'<span class="pill danger">Fora da janela</span>':'')+'</dd>'+
+      '<dt>Janela do MOC</dt><dd>'+diffDias(m.dtIni,m.dtFim)+' dias <span class="tiny">(SLA: '+(SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias)</span></dd>'+
+      '<dt>Complexidade</dt><dd>'+cxPill(m.complexo)+'</dd>'+
+    '</dl>';
+}
+
+function paneImpacto(m){
+  const c = calcComplexidade(m.av);
+  return '<div class="sec-h">Avaliação de impacto</div>'+
+    '<div class="note"><b>Como funciona:</b> cada resposta <b>"Sim"</b> gera automaticamente um item de ação com responsável e prazo. '+
+    'A quantidade e a criticidade das respostas definem se o MOC é <b>simples</b> (3 aprovadores) ou <b>complexo</b> ('+REGRA.complexoAprov+' aprovadores).</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'+
+      cxPill(m.complexo)+
+      '<span class="pill info">'+c.sins+' impactos identificados</span>'+
+      (c.criticas?'<span class="pill danger">'+c.criticas+' crítico(s)</span>':'')+
+      (c.qualidade?'<span class="pill qual">'+c.qualidade+' de Qualidade</span>':'')+
+    '</div>'+
+    DIMS.map(d=>{
+      const qs = QUESTOES.filter(q=>q.dim===d.id);
+      const sims = qs.filter(q=>(m.av[q.id]||{}).r==='sim').length;
+      return '<div class="dim">'+
+        '<div class="dim-h"><span class="dot" style="background:'+d.cor+'"></span><h4>'+d.nome+'</h4>'+
+          (d.destaque?'<span class="pill qual">bloco exclusivo da unidade</span>':'')+
+          '<span class="tiny">'+sims+' de '+qs.length+' com impacto</span></div>'+
+        qs.map(q=>{
+          const a = m.av[q.id]||{r:'—'};
+          const sim = a.r==='sim';
+          return '<div class="q'+(sim?' yes':'')+(d.destaque?' q-qual':'')+'">'+
+            '<div class="q-top"><div class="q-txt">'+esc(q.txt)+(q.critica?' <span class="pill danger" style="font-size:9px">crítica</span>':'')+'</div>'+
+            '<div class="q-opts"><span class="q-opt'+(sim?' on-yes':'')+'">Sim</span><span class="q-opt'+(a.r==='nao'?' on-no':'')+'">Não</span></div></div>'+
+            (sim && a.obs ? '<div class="tiny" style="margin-top:8px;font-style:italic">'+esc(a.obs)+'</div>' : '')+
+            (sim ? '<div class="tiny" style="margin-top:6px"><span class="auto-tag">ação gerada</span> '+esc(q.acao)+' · '+esc(pName(a.resp||q.resp))+'</div>' : '')+
+          '</div>';
+        }).join('')+
+      '</div>';
+    }).join('');
+}
+
+function paneAprov(m){
+  const cfg = cfgFor(m.tipo, m.complexo);
+  return '<div class="sec-h">Aprovações</div>'+
+    '<div class="note"><b>Régua de aprovação:</b> '+(m.complexo?'MOC <b>complexo</b> — '+REGRA.complexoAprov+' aprovadores.':'MOC <b>simples</b> — '+REGRA.simplesAprov+' aprovadores.')+
+    ' Motivo: '+esc(calcComplexidade(m.av).motivo)+'. O MOC só avança após a aprovação de cada nível.</div>'+
+    '<div class="tl" style="margin:16px 0 8px">'+
+      m.aprovacoes.map((a,i)=>{
+        const s = slaAprovStatus(a);
+        const cls = a.status==='aprovado'?'ok':a.status==='rejeitado'?'no':'pend';
+        return '<div class="tl-i '+cls+'">'+
+          '<div class="w">'+esc(a.papel)+' — '+esc(pName(a.pessoa))+' <span class="tiny">('+esc(pArea(a.pessoa))+')</span></div>'+
+          '<div class="d">'+(a.em?fmt(a.em):(a.prazo?'prazo: '+fmt(a.prazo):'aguardando nível anterior'))+'</div>'+
+          '<div class="m">'+
+            (a.status==='aprovado'?'<span class="pill ok">Aprovado</span>':
+             a.status==='rejeitado'?'<span class="pill danger">Rejeitado</span>':
+             '<span class="pill neutral">Pendente</span>')+
+            (s && a.status==='pendente'?' <span class="pill '+s.cls+'">'+s.lb+'</span>':'')+
+            (a.obs?'<div style="margin-top:5px;font-style:italic">"'+esc(a.obs)+'"</div>':'')+
+          '</div></div>';
+      }).join('')+
+    '</div>'+
+    '<div class="sec-h">Responsabilidades finais</div>'+
+    '<dl class="kv">'+
+      cfg.papeis.map((p,i)=>'<dt>'+esc(p)+'</dt><dd>'+avatarChip(cfg.pessoas[i])+'</dd>').join('')+
+      '<dt>Responsável por análise pré-iniciação</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
+    '</dl>';
+}
+
+function paneAcoes(m){
+  const ab = acoesAbertas(m).length;
+  return '<div class="sec-h">Itens de ação</div>'+
+    (ab ? '<div class="note" style="border-left-color:var(--warn);background:var(--warn-soft)"><b>'+ab+' ação(ões) em aberto.</b> O MOC não pode ser encerrado enquanto houver item pendente.</div>'
+        : '<div class="note" style="border-left-color:var(--ok);background:var(--ok-soft)"><b>Todas as ações concluídas.</b> O MOC está liberado para encerramento.</div>')+
+    (m.acoes.length ? m.acoes.map(a=>'<div class="q'+(a.status==='atrasada'?' yes':'')+'" style="margin-top:10px">'+
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:9px">'+
+        '<span class="mono" style="font-size:11px;font-weight:700;color:var(--brand)">'+a.id+'</span>'+
+        acPill(a.status)+
+        (a.necessarioInicio?'<span class="pill danger">Necessário para iniciar procedimento</span>':'')+
+        '<span class="auto-tag">gerada por: '+esc(dimById(qById(a.qid).dim).nome)+'</span>'+
+      '</div>'+
+      '<div class="fld"><span class="fld-l">Título da ação</span><div class="ro-box">'+esc(a.titulo)+'</div></div>'+
+      (a.desc?'<div class="fld"><span class="fld-l">Descrição</span><div class="ro-box">'+esc(a.desc)+'</div></div>':'')+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'+
+        '<div><span class="fld-l">Pessoa responsável</span>'+avatarChip(a.resp)+'</div>'+
+        '<div><span class="fld-l">Data de vencimento</span><b style="font-size:13px">'+fmt(a.venc)+'</b>'+
+          (a.status!=='concluida' && diffDias(HOJE_S,a.venc)<0 ? ' <span class="pill danger">'+Math.abs(diffDias(HOJE_S,a.venc))+'d de atraso</span>':'')+'</div>'+
+        '<div><span class="fld-l">Conclusão</span><b style="font-size:13px">'+(a.concluidaEm?fmt(a.concluidaEm):'—')+'</b></div>'+
+      '</div>'+
+      (a.status!=='concluida' && (a.resp===USER || ROLE==='admin') ?
+        '<div style="margin-top:11px"><button class="btn ok sm perm-w" onclick="concluirAcao(\''+m.id+'\',\''+a.id+'\')">Marcar como concluída</button></div>' : '')+
+    '</div>').join('') : '<div class="muted" style="padding:20px;text-align:center">Nenhuma ação gerada — nenhum impacto foi identificado na avaliação.</div>')+
+    '<div style="margin-top:14px"><button class="btn ghost sm perm-w" onclick="addAcaoManual(\''+m.id+'\')">+ Adicionar ação manual</button></div>';
+}
+
+function paneAnexos(m){
+  return '<div class="sec-h">Anexos</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Arquivo</th><th>Tamanho</th><th>Enviado por</th><th>Data</th></tr></thead><tbody>'+
+    m.anexos.map(a=>'<tr><td style="font-weight:600">'+esc(a.n)+'</td><td class="tiny">'+esc(a.t)+'</td><td>'+avatarChip(a.por)+'</td><td class="tiny">'+fmt(a.em)+'</td></tr>').join('')+
+    '</tbody></table></div>'+
+    '<div style="margin-top:14px"><button class="btn ghost sm perm-w" onclick="toast(\'Protótipo: upload de anexo não implementado no mock\')">+ Anexar arquivo</button></div>';
+}
+
+function paneEmails(m){
+  const list = emailsDe(m.id);
+  return '<div class="sec-h">Notificações de e-mail</div>'+
+    '<div class="note">Todo e-mail disparado pelo MOC fica registrado aqui. O sistema envia <b>lembrete automático</b> '+slaLembrete()+' dia(s) antes do vencimento da aprovação — a lacuna relatada no sistema atual, onde o e-mail chega uma vez e não se repete.</div>'+
+    (list.length ? list.map(mailCard).join('') : '<div class="muted" style="padding:20px;text-align:center">Nenhum e-mail disparado ainda para este MOC.</div>');
+}
+
+function paneTrilha(m){
+  const ev = [];
+  ev.push({d:m.criado, w:'MOC criado', m:'Criado por '+pName(m.solicitante)+' · tipo '+m.tipo, cls:''});
+  const c = calcComplexidade(m.av);
+  ev.push({d:m.criado, w:'Avaliação de impacto respondida', m:c.sins+' impactos identificados → '+m.acoes.length+' ação(ões) gerada(s) automaticamente · classificado como '+(m.complexo?'COMPLEXO':'SIMPLES'), cls:''});
+  m.aprovacoes.filter(a=>a.em).forEach(a=>ev.push({d:a.em, cls:a.status==='aprovado'?'ok':'no',
+    w:(a.status==='aprovado'?'Aprovado':'Rejeitado')+' — '+a.papel, m:pName(a.pessoa)+(a.obs?' · "'+a.obs+'"':'')}));
+  m.acoes.filter(a=>a.concluidaEm).forEach(a=>ev.push({d:a.concluidaEm, cls:'ok', w:'Ação concluída — '+a.titulo, m:a.id+' · '+pName(a.resp)}));
+  if(m.concluido) ev.push({d:m.concluido, cls:'ok', w:'MOC encerrado', m:'Todas as ações concluídas e aprovações registradas'});
+  emailsDe(m.id).forEach(e=>ev.push({d:e.data, cls:'pend', w:'E-mail enviado — '+e.tipo, m:'Para: '+e.para}));
+
+  return '<div class="sec-h">Trilha da auditoria</div>'+
+    '<div class="note">Registro imutável de tudo que aconteceu no MOC — é a evidência apresentada em auditoria.</div>'+
+    '<div class="tl">'+ev.sort((a,b)=>a.d.localeCompare(b.d)).map(e=>
+      '<div class="tl-i '+e.cls+'"><div class="w">'+esc(e.w)+'</div><div class="d">'+fmt(e.d)+'</div><div class="m">'+esc(e.m)+'</div></div>'
+    ).join('')+'</div>';
+}
+
+
+/* ============================================================
+   MOTOR DE E-MAIL (simulado)
+   ============================================================ */
+const MAIL_TPL = {
+  submetido:  m => ({assunto:'[MOC] Novo MOC para sua aprovação: '+m.titulo,
+    corpo:'Você foi designado como aprovador do MOC <b>'+m.id+'</b> — '+esc(m.titulo)+'.<br><br>'+
+          'Solicitante: <b>'+pName(m.solicitante)+'</b><br>Unidade: '+m.site+' · '+m.area+'<br>'+
+          'Classificação: <b>'+(m.complexo?'Complexo':'Simples')+'</b><br>'+
+          'Prazo para sua análise: <b>{PRAZO}</b><br><br>O MOC só avança após a sua aprovação.'}),
+  lembrete:   m => ({assunto:'[MOC] Lembrete: aprovação vence em breve — '+m.id,
+    corpo:'O MOC <b>'+m.id+'</b> — '+esc(m.titulo)+' está <b>pendente da sua aprovação</b>.<br><br>'+
+          'Prazo: <b>{PRAZO}</b> — vence em {DIAS} dia(s).<br><br>Este é um lembrete automático.'}),
+  aprovado:   m => ({assunto:'[MOC] Seu MOC foi aprovado — '+m.id,
+    corpo:'O MOC <b>'+m.id+'</b> — '+esc(m.titulo)+' foi aprovado por <b>{QUEM}</b>.'}),
+  rejeitado:  m => ({assunto:'[MOC] Seu MOC foi rejeitado — '+m.id,
+    corpo:'O MOC <b>'+m.id+'</b> — '+esc(m.titulo)+' foi rejeitado por <b>{QUEM}</b>.<br><br>Motivo: <i>{MOTIVO}</i>'}),
+  finalizado: m => ({assunto:'[MOC] MOC encerrado — '+m.id,
+    corpo:'O MOC <b>'+m.id+'</b> — '+esc(m.titulo)+' foi encerrado com sucesso. Todas as ações foram concluídas.'}),
+  acaoVencida:m => ({assunto:'[MOC] Ação vencida — '+m.id,
+    corpo:'A ação <b>{ACAO}</b> do MOC <b>'+m.id+'</b> está vencida desde {PRAZO}.'}),
+};
+function enviarMail(tipo, m, para, vars){
+  const t = MAIL_TPL[tipo](m);
+  let corpo = t.corpo;
+  Object.keys(vars||{}).forEach(k=>{ corpo = corpo.split('{'+k+'}').join(esc(vars[k])); });
+  EMAILS.unshift({id:'ML'+(EMAILS.length+1), tipo, moc:m.id, para:pName(para), email:pMail(para),
+                  assunto:t.assunto, corpo, data:HOJE_S, auto:tipo==='lembrete'});
+}
+const emailsDe = id => EMAILS.filter(e=>e.moc===id);
+const TIPO_LB = {submetido:'MOC submetido', lembrete:'Lembrete de aprovação', aprovado:'MOC aprovado',
+                 rejeitado:'MOC rejeitado', finalizado:'MOC finalizado', acaoVencida:'Ação vencida'};
+function mailCard(e){
+  return '<div class="mail'+(e.tipo==='lembrete'?' remind':'')+(e.tipo==='acaoVencida'?' late':'')+'">'+
+    '<div class="mail-h"><b>'+esc(e.assunto)+'</b><br>'+
+      '<span class="tiny">Para: '+esc(e.para)+' &lt;'+esc(e.email)+'&gt; · '+fmt(e.data)+
+      (e.auto?' · <span class="pill warn" style="font-size:9px">automático</span>':'')+'</span></div>'+
+    '<div class="mail-b">'+e.corpo+
+      '<div><button class="btn sm" onclick="abrirMOC(\''+e.moc+'\')">Abrir MOC no sistema</button></div>'+
+    '</div></div>';
+}
+
+/* semeia o histórico de e-mails dos MOCs já em aprovação */
+(function(){
+  MOCS.forEach(m=>{
+    if(['conceito','aprovado','execucao','concluido','rejeitado'].includes(m.status)){
+      m.aprovacoes.forEach(a=>{
+        if(a.status!=='pendente' || a.prazo) enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(m.criado,5))});
+      });
+    }
+    m.aprovacoes.forEach(a=>{
+      if(a.status==='pendente' && a.prazo){
+        const d = diffDias(HOJE_S, a.prazo);
+        if(d <= slaLembrete()) enviarMail('lembrete', m, a.pessoa, {PRAZO: fmt(a.prazo), DIAS: Math.max(0,d)});
+      }
+      if(a.status==='rejeitado') enviarMail('rejeitado', m, m.solicitante, {QUEM: pName(a.pessoa), MOTIVO: a.obs||'—'});
+    });
+    m.acoes.forEach(a=>{ if(a.status==='atrasada') enviarMail('acaoVencida', m, a.resp, {ACAO:a.titulo, PRAZO:fmt(a.venc)}); });
+    if(m.status==='concluido') enviarMail('finalizado', m, m.solicitante, {});
+  });
+})();
+
+/* ============================================================
+   AÇÕES DO WORKFLOW
+   ============================================================ */
+function submeter(id){
+  const m = byId(id);
+  const cfg = cfgFor(m.tipo, m.complexo);
+  m.status = 'conceito';
+  m.aprovacoes = cfg.papeis.map((papel,i)=>({papel, pessoa:cfg.pessoas[i], status:'pendente'}));
+  const sla = m.complexo ? 7 : 5;
+  m.aprovacoes[0].prazo = addDias(HOJE_S, sla);
+  if(m.aprovacoes[1]) m.aprovacoes[1].prazo = addDias(HOJE_S, sla+2);
+  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,sla+4))}));
+  toast('MOC '+m.id+' enviado para aprovação · '+m.aprovacoes.length+' e-mails disparados', 'ok');
+  render();
+}
+
+function decidir(id, decisao){
+  const m = byId(id);
+  const a = proximoAprovador(m);
+  if(!a) return;
+  if(decisao==='rejeitado'){
+    modal('Rejeitar MOC — '+m.id,
+      '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft)">A rejeição devolve o MOC ao solicitante. O motivo é obrigatório e fica registrado na trilha de auditoria.</div>'+
+      '<div class="fld"><label class="fld-l">Motivo da rejeição *</label><textarea id="rejObs" placeholder="Descreva o que precisa ser corrigido..."></textarea><div id="rejErr"></div></div>',
+      '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="confirmaRejeicao(\''+id+'\')">Confirmar rejeição</button>');
+    return;
+  }
+  modal('Aprovar MOC — '+m.id,
+    '<div class="note" style="border-left-color:var(--ok);background:var(--ok-soft)">Você está aprovando como <b>'+esc(a.papel)+'</b>.</div>'+
+    '<dl class="kv" style="margin-bottom:14px"><dt>MOC</dt><dd>'+esc(m.titulo)+'</dd>'+
+      '<dt>Classificação</dt><dd>'+cxPill(m.complexo)+'</dd>'+
+      '<dt>Ações abertas</dt><dd>'+acoesAbertas(m).length+'</dd></dl>'+
+    '<div class="fld"><label class="fld-l">Comentário do aprovador (opcional)</label><textarea id="aprObs" placeholder="Observações..."></textarea></div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="confirmaAprovacao(\''+id+'\')">Confirmar aprovação</button>');
+}
+
+function confirmaAprovacao(id){
+  const m = byId(id), a = proximoAprovador(m);
+  a.status='aprovado'; a.em=HOJE_S; a.obs=el('aprObs').value.trim()||null;
+  enviarMail('aprovado', m, m.solicitante, {QUEM:pName(a.pessoa)});
+  const prox = proximoAprovador(m);
+  if(prox){
+    prox.prazo = addDias(HOJE_S, m.complexo?7:5);
+    enviarMail('submetido', m, prox.pessoa, {PRAZO: fmt(prox.prazo)});
+    toast('Aprovado. Encaminhado para '+pName(prox.pessoa)+' ('+prox.papel+')', 'ok');
+  } else {
+    m.status='aprovado';
+    setTimeout(()=>{ m.status='execucao'; render(); }, 600);
+    toast('Última aprovação registrada — MOC liberado para execução', 'ok');
+  }
+  closeModal(); render();
+}
+
+function confirmaRejeicao(id){
+  const obs = el('rejObs').value.trim();
+  if(!obs){ el('rejObs').classList.add('err'); el('rejErr').innerHTML='<div class="err-msg">O motivo da rejeição é obrigatório.</div>'; return; }
+  const m = byId(id), a = proximoAprovador(m);
+  a.status='rejeitado'; a.em=HOJE_S; a.obs=obs;
+  m.status='rejeitado';
+  enviarMail('rejeitado', m, m.solicitante, {QUEM:pName(a.pessoa), MOTIVO:obs});
+  closeModal(); toast('MOC rejeitado — solicitante notificado por e-mail', 'bad'); render();
+}
+
+function encerrar(id){
+  const m = byId(id);
+  const ab = acoesAbertas(m).length;
+  if(ab){ toast('Não é possível encerrar: '+ab+' ação(ões) em aberto', 'bad'); return; }
+  m.status='concluido'; m.concluido=HOJE_S;
+  enviarMail('finalizado', m, m.solicitante, {});
+  m.aprovacoes.forEach(a=>enviarMail('finalizado', m, a.pessoa, {}));
+  toast('MOC '+m.id+' encerrado com sucesso', 'ok'); render();
+}
+
+function concluirAcao(mid, aid){
+  const m = byId(mid), a = m.acoes.find(x=>x.id===aid);
+  a.status='concluida'; a.concluidaEm=HOJE_S;
+  const ab = acoesAbertas(m).length;
+  toast('Ação concluída'+(ab?' · restam '+ab+' em aberto':' · MOC liberado para encerramento'), 'ok');
+  render();
+}
+
+function addAcaoManual(mid){
+  const m = byId(mid);
+  modal('Adicionar ação manual — '+mid,
+    '<div class="note">Ações são geradas automaticamente pela avaliação de impacto. Use esta opção apenas para itens que o questionário não cobriu.</div>'+
+    '<div class="fld"><label class="fld-l">Título da ação *</label><input type="text" id="maT"></div>'+
+    '<div class="fld"><label class="fld-l">Descrição</label><textarea id="maD"></textarea></div>'+
+    '<div class="grid2"><div class="fld"><label class="fld-l">Pessoa responsável *</label><select id="maR">'+
+      PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<option value="'+p.id+'">'+esc(p.nome)+'</option>').join('')+'</select></div>'+
+    '<div class="fld"><label class="fld-l">Data de vencimento *</label><input type="date" id="maV" value="'+addDias(HOJE_S,30)+'"></div></div>'+
+    '<div id="maErr"></div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="salvaAcaoManual(\''+mid+'\')">Adicionar ação</button>');
+}
+function salvaAcaoManual(mid){
+  const m = byId(mid), t = el('maT').value.trim();
+  if(!t){ el('maT').classList.add('err'); el('maErr').innerHTML='<div class="err-msg">Informe o título da ação.</div>'; return; }
+  m.acoes.push({id:acId(mid, 200+m.acoes.length), qid:'q1', titulo:t, desc:el('maD').value.trim(),
+    resp:el('maR').value, venc:el('maV').value, status:'aberta', necessarioInicio:false, concluidaEm:null, manual:true});
+  closeModal(); toast('Ação manual adicionada', 'ok'); render();
+}
+
+const exportar = o => toast('Protótipo: exportação de '+o+' para Excel — a implementar');
+
+/* ============================================================
+   WIZARD — 6 ETAPAS
+   ============================================================ */
+const PASSOS = ['Tipo de MOC','Informações iniciais','Avaliação de impacto','Gestão de ações','Aprovadores','Revisão e submissão'];
+
+function novoMOC(){
+  if(ROLE==='viewer'){ toast('Perfil Visualizador não cria MOC (somente leitura)', 'bad'); return; }
+  WIZ = {passo:0, tipo:null, titulo:'', desc:'', just:'', she:'', tipoAlt:'', impacto:'', site:'Pouso Alegre',
+         area:'', participantes:[USER], responsavel:USER, dtIni:addDias(HOJE_S,10), dtFim:addDias(HOJE_S,70),
+         av:{}, acoes:[], erros:{}, confirm:false};
+  switchView('novo');
+}
+function wizGo(n){
+  if(n > WIZ.passo && !validaPasso(WIZ.passo)) { render(); return; }
+  if(n===3) gerarAcoes();
+  WIZ.passo = n; render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function validaPasso(p){
+  WIZ.erros = {};
+  if(p===0 && !WIZ.tipo){ toast('Selecione o tipo de MOC', 'bad'); return false; }
+  if(p===1){
+    ['titulo','desc','just','tipoAlt','impacto','area'].forEach(k=>{ if(!WIZ[k]) WIZ.erros[k]='Campo obrigatório'; });
+    if(!WIZ.participantes.length) WIZ.erros.participantes='Selecione ao menos 1 participante';
+    if(WIZ.dtIni && WIZ.dtFim && diffDias(WIZ.dtIni,WIZ.dtFim)<=0) WIZ.erros.dtFim='A conclusão deve ser posterior ao início';
+    const janela = (SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias;
+    if(WIZ.dtIni && WIZ.dtFim && diffDias(WIZ.dtIni,WIZ.dtFim)>janela) WIZ.erros.dtFim='A janela do MOC excede o SLA de '+janela+' dias';
+    if(Object.keys(WIZ.erros).length){ toast('Preencha os campos obrigatórios', 'bad'); return false; }
+  }
+  if(p===2){
+    const faltam = QUESTOES.filter(q=>!WIZ.av[q.id]).length;
+    if(faltam){ toast('Responda todas as '+QUESTOES.length+' questões — faltam '+faltam, 'bad'); return false; }
+  }
+  if(p===3){
+    const semResp = WIZ.acoes.filter(a=>!a.resp).length;
+    if(semResp){ toast('Defina o responsável de todas as ações', 'bad'); return false; }
+  }
+  return true;
+}
+
+function vWizard(){
+  if(!WIZ) { novoMOC(); return ''; }
+  const body = [wzTipo, wzInfo, wzImpacto, wzAcoes, wzAprov, wzRevisao][WIZ.passo]();
+  return '<div class="steps">'+PASSOS.map((p,i)=>
+      '<div class="step'+(i===WIZ.passo?' on':'')+(i<WIZ.passo?' done':'')+'" onclick="'+(i<WIZ.passo?'wizGo('+i+')':'')+'">'+
+      '<span class="n">'+(i<WIZ.passo?'✓':(i+1))+'</span>'+p+'</div>').join('')+'</div>'+
+    '<div class="card pad">'+body+'</div>'+
+    '<div class="wiz-foot">'+
+      (WIZ.passo>0?'<button class="btn ghost" onclick="wizGo('+(WIZ.passo-1)+')">← Voltar</button>':
+                   '<button class="btn ghost" onclick="switchView(\'home\')">Cancelar</button>')+
+      (WIZ.passo<5?'<button class="btn ghost" onclick="salvarRascunho()">Salvar como rascunho</button>'+
+                   '<button class="btn" onclick="wizGo('+(WIZ.passo+1)+')">Próximo →</button>':'')+
+    '</div>';
+}
+
+function wzTipo(){
+  return '<div class="panel-head"><div><div class="section-title">Etapa 1 · Selecione o tipo de MOC</div>'+
+    '<div class="muted">A escolha define a régua de aprovadores padrão aplicada ao final do fluxo.</div></div></div>'+
+    '<div class="type-cards">'+
+      [['Permanente','Alteração definitiva na operação — o novo estado passa a ser o padrão. Exige aprovação de encerramento e atualização da documentação oficial.','M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z'],
+       ['Temporário','Alteração com prazo determinado — a operação retorna ao estado original ao fim da janela. Exige data de reversão e acompanhamento do prazo.','M12 6v6l4 2']].map(t=>
+        '<div class="type-card'+(WIZ.tipo===t[0]?' sel':'')+'" onclick="WIZ.tipo=\''+t[0]+'\';render()">'+
+          '<div class="ic"><svg viewBox="0 0 24 24">'+(t[0]==='Temporário'?'<circle cx="12" cy="12" r="10"/>':'')+'<path d="'+t[2]+'"/></svg></div>'+
+          '<h4>MOC '+t[0]+'</h4><p>'+t[1]+'</p></div>').join('')+
+    '</div>';
+}
+
+function wzInfo(){
+  const e = WIZ.erros;
+  const ef = k => e[k]?'<div class="err-msg">'+e[k]+'</div>':'';
+  const cl = k => e[k]?' class="err"':'';
+  return '<div class="panel-head"><div><div class="section-title">Etapa 2 · Informações iniciais</div>'+
+    '<div class="muted">Parte inicial do projeto — pessoas presentes, tipo de alteração, impacto e onde acontece.</div></div>'+
+    '<span class="pill info">MOC '+WIZ.tipo+'</span></div>'+
+    '<div class="fld"><label class="fld-l">Título *</label><input type="text"'+cl('titulo')+' value="'+esc(WIZ.titulo)+'" oninput="WIZ.titulo=this.value" placeholder="Ex.: MOC - Novo Virador de Pets Pacific 2">'+ef('titulo')+'</div>'+
+    '<div class="fld"><label class="fld-l">Descrição de alteração *</label><textarea'+cl('desc')+' oninput="WIZ.desc=this.value" placeholder="O que exatamente será alterado...">'+esc(WIZ.desc)+'</textarea>'+ef('desc')+'</div>'+
+    '<div class="fld"><label class="fld-l">Justificação para alteração *</label><textarea'+cl('just')+' oninput="WIZ.just=this.value" placeholder="Por que a alteração é necessária e o que se espera dela...">'+esc(WIZ.just)+'</textarea>'+ef('just')+'</div>'+
+    '<div class="fld"><label class="fld-l">Impacto da alteração no SHE</label><textarea oninput="WIZ.she=this.value" placeholder="Safety/Health, Environment, Quality...">'+esc(WIZ.she)+'</textarea></div>'+
+    '<div class="grid3">'+
+      '<div class="fld"><label class="fld-l">Tipo de alteração *</label><select'+cl('tipoAlt')+' onchange="WIZ.tipoAlt=this.value">'+
+        opt([''].concat(TIPOS_ALT), WIZ.tipoAlt, v=>v||'Selecione...')+'</select>'+ef('tipoAlt')+'</div>'+
+      '<div class="fld"><label class="fld-l">Impacto associado *</label><select'+cl('impacto')+' onchange="WIZ.impacto=this.value">'+
+        opt([''].concat(IMPACTOS), WIZ.impacto, v=>v||'Selecione...')+'</select>'+ef('impacto')+'</div>'+
+      '<div class="fld"><label class="fld-l">Unidade *</label><select onchange="WIZ.site=this.value;WIZ.area=\'\';render()">'+
+        opt(SITES, WIZ.site)+'</select></div>'+
+    '</div>'+
+    '<div class="grid3">'+
+      '<div class="fld"><label class="fld-l">Onde acontece (área) *</label><select'+cl('area')+' onchange="WIZ.area=this.value">'+
+        opt([''].concat(AREAS[WIZ.site]), WIZ.area, v=>v||'Selecione...')+'</select>'+ef('area')+'</div>'+
+      '<div class="fld"><label class="fld-l">Início planejado *</label><input type="date" value="'+WIZ.dtIni+'" onchange="WIZ.dtIni=this.value"></div>'+
+      '<div class="fld"><label class="fld-l">Conclusão planejada *</label><input type="date"'+cl('dtFim')+' value="'+WIZ.dtFim+'" onchange="WIZ.dtFim=this.value;render()">'+ef('dtFim')+'</div>'+
+    '</div>'+
+    '<div class="grid2">'+
+      '<div class="fld"><label class="fld-l">Responsável pelo MOC *</label><select onchange="WIZ.responsavel=this.value">'+
+        PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<option value="'+p.id+'"'+(p.id===WIZ.responsavel?' selected':'')+'>'+esc(p.nome)+' — '+esc(p.area)+'</option>').join('')+'</select></div>'+
+      '<div class="fld"><label class="fld-l">Pessoas presentes / envolvidas *</label>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1.5px solid var(--line);border-radius:10px;min-height:42px">'+
+        PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<span class="pill '+(WIZ.participantes.includes(p.id)?'info':'neutral')+'" style="cursor:pointer" onclick="togPart(\''+p.id+'\')">'+
+          (WIZ.participantes.includes(p.id)?'✓ ':'')+esc(p.nome)+'</span>').join('')+'</div>'+ef('participantes')+'</div>'+
+    '</div>'+
+    '<div class="tiny">Janela do MOC: <b>'+(WIZ.dtIni&&WIZ.dtFim?diffDias(WIZ.dtIni,WIZ.dtFim)+' dias':'—')+'</b> · SLA máximo: '+(SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias</div>';
+}
+function togPart(id){
+  const i = WIZ.participantes.indexOf(id);
+  if(i<0) WIZ.participantes.push(id); else WIZ.participantes.splice(i,1);
+  render();
+}
+
+function wzImpacto(){
+  const c = calcComplexidade(WIZ.av);
+  const resp = QUESTOES.filter(q=>WIZ.av[q.id]).length;
+  return '<div class="panel-head"><div><div class="section-title">Etapa 3 · Avaliação de impacto</div>'+
+    '<div class="muted">Cada "Sim" gera automaticamente um item de ação. As respostas definem a complexidade do MOC.</div></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<span class="pill '+(resp===QUESTOES.length?'ok':'neutral')+'">'+resp+'/'+QUESTOES.length+' respondidas</span>'+
+      cxPill(c.complexo)+'</div></div>'+
+    '<div class="qual-note"><b>Bloco de Qualidade:</b> estas questões não existem no sistema global — foram removidas na última atualização. '+
+      'Elas são obrigatórias nesta unidade por causa das auditorias e são o motivo principal do sistema próprio. Uma resposta "Sim" em questão de qualidade '+
+      'gera ação com responsável da Qualidade e classifica o MOC como complexo.</div>'+
+    DIMS.map(d=>{
+      const qs = QUESTOES.filter(q=>q.dim===d.id);
+      return '<div class="dim">'+
+        '<div class="dim-h"><span class="dot" style="background:'+d.cor+'"></span><h4>'+d.nome+'</h4>'+
+        (d.destaque?'<span class="pill qual">bloco exclusivo da unidade</span>':'')+'</div>'+
+        qs.map(q=>{
+          const a = WIZ.av[q.id];
+          const sim = a && a.r==='sim';
+          return '<div class="q'+(sim?' yes':'')+(d.destaque?' q-qual':'')+'">'+
+            '<div class="q-top"><div class="q-txt">'+esc(q.txt)+(q.critica?' <span class="pill danger" style="font-size:9px">crítica</span>':'')+'</div>'+
+            '<div class="q-opts">'+
+              '<span class="q-opt'+(sim?' on-yes':'')+'" onclick="resp(\''+q.id+'\',\'sim\')">Sim</span>'+
+              '<span class="q-opt'+(a&&a.r==='nao'?' on-no':'')+'" onclick="resp(\''+q.id+'\',\'nao\')">Não</span>'+
+            '</div></div>'+
+            (sim ? '<div class="q-gen">'+
+              '<div class="fld"><label class="fld-l"><span class="auto-tag">ação gerada automaticamente</span></label>'+
+                '<input type="text" value="'+esc(a.acao||q.acao)+'" oninput="WIZ.av[\''+q.id+'\'].acao=this.value"></div>'+
+              '<div class="fld"><label class="fld-l">Pessoa responsável</label><select onchange="WIZ.av[\''+q.id+'\'].resp=this.value">'+
+                PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<option value="'+p.id+'"'+(p.id===(a.resp||q.resp)?' selected':'')+'>'+esc(p.nome)+'</option>').join('')+'</select></div>'+
+              '<div class="fld"><label class="fld-l">Vencimento</label><input type="date" value="'+(a.venc||addDias(HOJE_S,q.dias))+'" onchange="WIZ.av[\''+q.id+'\'].venc=this.value"></div>'+
+              '<div class="fld" style="grid-column:1/-1"><label class="fld-l">Observações</label><input type="text" value="'+esc(a.obs||'')+'" oninput="WIZ.av[\''+q.id+'\'].obs=this.value" placeholder="Contexto para quem vai executar a ação..."></div>'+
+            '</div>' : '')+
+          '</div>';
+        }).join('')+'</div>';
+    }).join('')+
+    '<div class="note" style="border-left-color:'+(c.complexo?'var(--danger)':'var(--ok)')+'"><b>Classificação automática: MOC '+(c.complexo?'COMPLEXO':'SIMPLES')+'</b><br>'+
+      esc(c.motivo)+' · '+c.sins+' impacto(s) → '+c.sins+' ação(ões) serão geradas · '+
+      (c.complexo?REGRA.complexoAprov:REGRA.simplesAprov)+' aprovadores exigidos.</div>';
+}
+function resp(qid, r){
+  const q = qById(qid);
+  if(r==='sim') WIZ.av[qid] = Object.assign({r:'sim', acao:q.acao, resp:q.resp, venc:addDias(HOJE_S,q.dias), obs:''}, WIZ.av[qid], {r:'sim'});
+  else WIZ.av[qid] = {r:'nao'};
+  render();
+}
+
+function gerarAcoes(){
+  WIZ.acoes = Object.keys(WIZ.av).filter(k=>WIZ.av[k].r==='sim').map((k,i)=>{
+    const q = qById(k), a = WIZ.av[k];
+    return {id:'AC-(novo)-'+String(i+1).padStart(3,'0'), qid:k, titulo:a.acao||q.acao, desc:a.obs||'',
+            resp:a.resp||q.resp, venc:a.venc||addDias(HOJE_S,q.dias), status:'aberta', necessarioInicio:!!q.critica};
+  });
+}
+
+function wzAcoes(){
+  const c = calcComplexidade(WIZ.av);
+  return '<div class="panel-head"><div><div class="section-title">Etapa 4 · Gestão de ações</div>'+
+    '<div class="muted">Ações geradas pela avaliação de impacto. Revise responsáveis e prazos antes de submeter.</div></div>'+
+    '<span class="pill '+(WIZ.acoes.length?'warn':'ok')+'">'+WIZ.acoes.length+' ação(ões)</span></div>'+
+    (WIZ.acoes.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>Origem</th><th>Responsável</th><th>Vencimento</th><th>Bloqueia início</th><th></th></tr></thead><tbody>'+
+      WIZ.acoes.map((a,i)=>'<tr>'+
+        '<td><input type="text" value="'+esc(a.titulo)+'" oninput="WIZ.acoes['+i+'].titulo=this.value" style="font-weight:600"></td>'+
+        '<td><span class="pill" style="background:'+dimById(qById(a.qid).dim).cor+'22;color:'+dimById(qById(a.qid).dim).cor+'">'+esc(dimById(qById(a.qid).dim).nome)+'</span></td>'+
+        '<td><select onchange="WIZ.acoes['+i+'].resp=this.value">'+PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<option value="'+p.id+'"'+(p.id===a.resp?' selected':'')+'>'+esc(p.nome)+'</option>').join('')+'</select></td>'+
+        '<td><input type="date" value="'+a.venc+'" onchange="WIZ.acoes['+i+'].venc=this.value"></td>'+
+        '<td>'+(a.necessarioInicio?'<span class="pill danger">Sim</span>':'<span class="pill neutral">Não</span>')+'</td>'+
+        '<td><button class="btn ghost sm" onclick="WIZ.acoes.splice('+i+',1);render()">Remover</button></td>'+
+      '</tr>').join('')+'</tbody></table></div>'
+    : '<div class="muted" style="padding:30px;text-align:center">Nenhum impacto identificado — nenhuma ação foi gerada.<br><span class="tiny">O MOC segue direto para aprovação como '+(c.complexo?'complexo':'simples')+'.</span></div>')+
+    '<div class="note" style="border-left-color:var(--warn);background:var(--warn-soft);margin-top:14px"><b>Regra:</b> o MOC não pode ser <b>encerrado</b> enquanto houver ação em aberto. '+
+      'Ações marcadas como <b>"necessário para iniciar procedimento"</b> também bloqueiam o início da execução.</div>'+
+    '<div style="margin-top:12px"><button class="btn ghost sm" onclick="wizAddAcao()">+ Adicionar ação manual</button></div>';
+}
+function wizAddAcao(){
+  WIZ.acoes.push({id:'AC-(novo)-M'+(WIZ.acoes.length+1), qid:'q1', titulo:'', desc:'', resp:USER,
+                  venc:addDias(HOJE_S,30), status:'aberta', necessarioInicio:false, manual:true});
+  render();
+}
+
+function wzAprov(){
+  const c = calcComplexidade(WIZ.av);
+  const cfg = cfgFor(WIZ.tipo, c.complexo);
+  if(!WIZ.aprovadores || WIZ.aprovadores.length!==cfg.papeis.length) WIZ.aprovadores = cfg.pessoas.slice();
+  return '<div class="panel-head"><div><div class="section-title">Etapa 5 · Aprovadores</div>'+
+    '<div class="muted">A régua é definida automaticamente pela avaliação de impacto.</div></div>'+cxPill(c.complexo)+'</div>'+
+    '<div class="note" style="border-left-color:'+(c.complexo?'var(--danger)':'var(--ok)')+'">'+
+      '<b>MOC '+(c.complexo?'complexo':'simples')+' → '+cfg.papeis.length+' aprovadores.</b><br>'+esc(c.motivo)+'.<br>'+
+      'MOCs simples exigem '+REGRA.simplesAprov+' aprovadores. MOCs complexos exigem '+REGRA.complexoAprov+', incluindo Qualidade e SHE.</div>'+
+    '<div style="margin-top:16px">'+cfg.papeis.map((p,i)=>
+      '<div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px">'+
+        '<div><div style="font-weight:700;font-size:13.5px">'+esc(p)+'</div>'+
+        '<div class="tiny">Nível '+(i+1)+' · SLA de análise: '+(c.complexo?7:5)+' dias</div></div>'+
+        '<select onchange="WIZ.aprovadores['+i+']=this.value;render()">'+
+          PEOPLE.filter(x=>x.id!=='tamires').map(x=>'<option value="'+x.id+'"'+(x.id===WIZ.aprovadores[i]?' selected':'')+'>'+esc(x.nome)+' — '+esc(x.area)+'</option>').join('')+
+        '</select></div>').join('')+'</div>'+
+    '<button class="btn ghost sm" onclick="WIZ.aprovadores=cfgFor(WIZ.tipo,calcComplexidade(WIZ.av).complexo).pessoas.slice();render();toast(\'Aprovadores padrão restaurados\')">Restaurar aprovadores padrão</button>';
+}
+
+function wzRevisao(){
+  const c = calcComplexidade(WIZ.av);
+  const cfg = cfgFor(WIZ.tipo, c.complexo);
+  return '<div class="panel-head"><div><div class="section-title">Etapa 6 · Revisão e submissão</div>'+
+    '<div class="muted">Confira tudo antes de enviar. A submissão dispara e-mail para todos os aprovadores.</div></div></div>'+
+    '<div class="sec-h">Informações iniciais <button class="btn ghost sm" style="float:right" onclick="wizGo(1)">Editar</button></div>'+
+    '<dl class="kv"><dt>Tipo de MOC</dt><dd>'+WIZ.tipo+'</dd>'+
+      '<dt>Título</dt><dd>'+esc(WIZ.titulo)+'</dd>'+
+      '<dt>Tipo de alteração</dt><dd>'+esc(WIZ.tipoAlt)+'</dd>'+
+      '<dt>Impacto associado</dt><dd>'+esc(WIZ.impacto)+'</dd>'+
+      '<dt>Unidade / área</dt><dd>'+esc(WIZ.site)+' · '+esc(WIZ.area)+'</dd>'+
+      '<dt>Responsável</dt><dd>'+avatarChip(WIZ.responsavel)+'</dd>'+
+      '<dt>Pessoas presentes</dt><dd>'+WIZ.participantes.map(p=>'<span class="pill neutral" style="margin:2px">'+esc(pName(p))+'</span>').join('')+'</dd>'+
+      '<dt>Janela</dt><dd>'+fmt(WIZ.dtIni)+' → '+fmt(WIZ.dtFim)+' ('+diffDias(WIZ.dtIni,WIZ.dtFim)+' dias)</dd></dl>'+
+    '<div class="sec-h">Avaliação de impacto <button class="btn ghost sm" style="float:right" onclick="wizGo(2)">Editar</button></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+cxPill(c.complexo)+
+      '<span class="pill info">'+c.sins+' impactos</span>'+(c.criticas?'<span class="pill danger">'+c.criticas+' crítico(s)</span>':'')+
+      (c.qualidade?'<span class="pill qual">'+c.qualidade+' de Qualidade</span>':'')+'</div>'+
+    '<div class="sec-h">Ações geradas ('+WIZ.acoes.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo(3)">Editar</button></div>'+
+    (WIZ.acoes.length?'<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>Responsável</th><th>Vencimento</th></tr></thead><tbody>'+
+      WIZ.acoes.map(a=>'<tr><td style="font-weight:600">'+esc(a.titulo)+'</td><td>'+esc(pName(a.resp))+'</td><td class="tiny">'+fmt(a.venc)+'</td></tr>').join('')+
+      '</tbody></table></div>':'<div class="muted tiny">Nenhuma ação gerada.</div>')+
+    '<div class="sec-h">Aprovadores ('+cfg.papeis.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo(4)">Editar</button></div>'+
+    '<dl class="kv">'+cfg.papeis.map((p,i)=>'<dt>'+esc(p)+'</dt><dd>'+avatarChip(WIZ.aprovadores[i])+'</dd>').join('')+'</dl>'+
+    '<div class="note" style="margin-top:20px"><b>Ao submeter:</b> '+cfg.papeis.length+' e-mail(s) serão disparados aos aprovadores com o prazo de análise. '+
+      'Lembrete automático '+slaLembrete()+' dia(s) antes do vencimento.</div>'+
+    '<label style="display:flex;gap:10px;align-items:center;margin:16px 0;font-size:13.5px;font-weight:600;cursor:pointer">'+
+      '<input type="checkbox" style="width:18px;height:18px" '+(WIZ.confirm?'checked':'')+' onchange="WIZ.confirm=this.checked;render()">'+
+      'Confirmo que todas as informações estão corretas</label>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap">'+
+      '<button class="btn ok" '+(WIZ.confirm?'':'disabled')+' onclick="submeterNovo()">Submeter para aprovação</button>'+
+      '<button class="btn ghost" onclick="salvarRascunho()">Salvar como rascunho</button></div>';
+}
+
+function materializa(status){
+  const c = calcComplexidade(WIZ.av);
+  const cfg = cfgFor(WIZ.tipo, c.complexo);
+  const id = mocId(HOJE_S);
+  const av = {}; QUESTOES.forEach(q=>{ av[q.id] = WIZ.av[q.id] || {r:'nao'}; });
+  const m = {
+    id, tipo:WIZ.tipo, status, titulo:WIZ.titulo, desc:WIZ.desc, justificativa:WIZ.just, impactoSHE:WIZ.she||'—',
+    tipoAlt:WIZ.tipoAlt, impacto:WIZ.impacto, site:WIZ.site, area:WIZ.area,
+    solicitante:USER, responsavel:WIZ.responsavel, participantes:WIZ.participantes.slice(),
+    criado:HOJE_S, dtIni:WIZ.dtIni, dtFim:WIZ.dtFim, concluido:null,
+    av, complexo:c.complexo,
+    acoes: WIZ.acoes.map((a,i)=>({id:acId(id,123+i), qid:a.qid, titulo:a.titulo, desc:a.desc, resp:a.resp,
+                                  venc:a.venc, status:'aberta', necessarioInicio:a.necessarioInicio, concluidaEm:null})),
+    aprovacoes: cfg.papeis.map((p,i)=>({papel:p, pessoa:(WIZ.aprovadores||cfg.pessoas)[i], status:'pendente'})),
+    anexos:[],
+  };
+  MOCS.unshift(m);
+  return m;
+}
+function salvarRascunho(){
+  if(!WIZ.titulo){ toast('Informe ao menos o título para salvar o rascunho', 'bad'); return; }
+  if(!WIZ.tipo) WIZ.tipo='Permanente';
+  gerarAcoes();
+  const m = materializa('rascunho');
+  WIZ = null; toast('Rascunho salvo — '+m.id, 'ok'); abrirMOC(m.id);
+}
+function submeterNovo(){
+  if(!validaPasso(1)||!validaPasso(2)) return;
+  const m = materializa('conceito');
+  const sla = m.complexo ? 7 : 5;
+  m.aprovacoes[0].prazo = addDias(HOJE_S, sla);
+  if(m.aprovacoes[1]) m.aprovacoes[1].prazo = addDias(HOJE_S, sla+2);
+  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,sla+4))}));
+  WIZ = null;
+  modal('MOC submetido com sucesso',
+    '<div style="text-align:center;padding:10px 0 4px">'+
+      '<div style="width:60px;height:60px;border-radius:50%;background:var(--ok-soft);display:grid;place-items:center;margin:0 auto 14px">'+
+        '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1f9d57" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg></div>'+
+      '<div style="font-family:Poppins;font-size:17px;font-weight:700">MOC submetido para aprovação</div>'+
+      '<div class="mono" style="font-size:15px;color:var(--brand);font-weight:700;margin:8px 0">'+m.id+'</div>'+
+      '<div class="muted">'+m.aprovacoes.length+' aprovador(es) notificado(s) por e-mail · '+m.acoes.length+' ação(ões) gerada(s)</div>'+
+    '</div>',
+    '<button class="btn ghost" onclick="closeModal();switchView(\'notif\')">Ver e-mails disparados</button>'+
+    '<button class="btn" onclick="closeModal();abrirMOC(\''+m.id+'\')">Abrir MOC</button>');
+  render();
+}
+
+/* ============================================================
+   TELA: ITENS DE AÇÃO (consolidado)
+   ============================================================ */
+let fAc = {status:'', resp:''};
+function vAcoes(){
+  let rows = MOCS.flatMap(m=>m.acoes.map(a=>({a,m})));
+  if(fAc.status) rows = rows.filter(x=>x.a.status===fAc.status);
+  if(fAc.resp)   rows = rows.filter(x=>x.a.resp===fAc.resp);
+  const cont = s => MOCS.flatMap(m=>m.acoes).filter(a=>a.status===s).length;
+
+  return '<div class="stat-grid">'+
+    '<div class="stat"><span class="bar"></span><div class="lb">Total de ações</div><div class="vl">'+MOCS.flatMap(m=>m.acoes).length+'</div><div class="sub">geradas pela avaliação de impacto</div></div>'+
+    '<div class="stat y"><span class="bar"></span><div class="lb">Abertas</div><div class="vl">'+(cont('aberta')+cont('andamento'))+'</div><div class="sub">bloqueiam o encerramento do MOC</div></div>'+
+    '<div class="stat r"><span class="bar"></span><div class="lb">Em atraso</div><div class="vl">'+cont('atrasada')+'</div><div class="sub">responsável notificado por e-mail</div></div>'+
+    '<div class="stat g"><span class="bar"></span><div class="lb">Concluídas</div><div class="vl">'+cont('concluida')+'</div><div class="sub">evidência para auditoria</div></div>'+
+  '</div>'+
+  '<div class="filters"><span class="lb">Filtros</span>'+
+    '<select onchange="fAc.status=this.value;render()">'+opt(['','aberta','andamento','atrasada','concluida'], fAc.status, v=>v?ACST[v].lb:'Todos os status')+'</select>'+
+    '<select onchange="fAc.resp=this.value;render()">'+opt([''].concat(PEOPLE.filter(p=>p.id!=='tamires').map(p=>p.id)), fAc.resp, v=>v?pName(v):'Todos os responsáveis')+'</select>'+
+    '<div class="spacer"></div><button class="btn ghost sm" onclick="exportar(\'Ações\')">Exportar</button></div>'+
+  '<div class="card"><div class="tbl-wrap"><table><thead><tr>'+
+    '<th>Ação</th><th>MOC</th><th>Dimensão</th><th>Responsável</th><th>Vencimento</th><th>Status</th><th>Atraso</th>'+
+    '</tr></thead><tbody>'+
+    (rows.length?rows.map(x=>{
+      const atr = x.a.status!=='concluida' ? diffDias(HOJE_S, x.a.venc) : 0;
+      const d = dimById(qById(x.a.qid).dim);
+      return '<tr class="clk" onclick="abrirMOC(\''+x.m.id+'\',\'acoes\')">'+
+        '<td style="font-weight:600;min-width:220px">'+esc(x.a.titulo)+
+          (x.a.necessarioInicio?' <span class="pill danger" style="font-size:9px">bloqueia início</span>':'')+
+          '<div class="tiny mono">'+x.a.id+'</div></td>'+
+        '<td class="tiny mono" style="color:var(--brand);font-weight:700">'+x.m.id+'<div class="tiny" style="font-weight:400">'+esc(x.m.titulo.slice(0,28))+'</div></td>'+
+        '<td><span class="pill" style="background:'+d.cor+'22;color:'+d.cor+'">'+esc(d.nome)+'</span></td>'+
+        '<td>'+avatarChip(x.a.resp)+'</td>'+
+        '<td class="tiny">'+fmt(x.a.venc)+'</td>'+
+        '<td>'+acPill(x.a.status)+'</td>'+
+        '<td class="tiny">'+(atr<0?'<span class="pill danger">'+Math.abs(atr)+' dias</span>':'—')+'</td>'+
+      '</tr>';
+    }).join(''):'<tr><td colspan="7" class="muted" style="text-align:center;padding:30px">Nenhuma ação encontrada.</td></tr>')+
+  '</tbody></table></div></div>';
+}
+
+/* ============================================================
+   TELA: NOTIFICAÇÕES DE E-MAIL
+   ============================================================ */
+let fMail = '';
+function vNotif(){
+  const list = fMail ? EMAILS.filter(e=>e.tipo===fMail) : EMAILS;
+  const cont = t => EMAILS.filter(e=>e.tipo===t).length;
+  return '<div class="note"><b>Caixa de saída do sistema.</b> Simula todo e-mail disparado pelo fluxo do MOC. '+
+    'O <b>lembrete automático</b> resolve a lacuna relatada na reunião: hoje o aprovador recebe o e-mail uma vez e nunca mais é cobrado.</div>'+
+    '<div class="filters"><span class="lb">Tipo</span>'+
+      '<select onchange="fMail=this.value;render()">'+opt([''].concat(Object.keys(TIPO_LB)), fMail, v=>v?TIPO_LB[v]+' ('+cont(v)+')':'Todos os e-mails ('+EMAILS.length+')')+'</select>'+
+      '<div class="spacer"></div><span class="tiny">'+list.length+' e-mail(s)</span></div>'+
+    '<div class="grid2" style="align-items:start">'+
+      '<div>'+(list.slice(0,10).map(mailCard).join('')||'<div class="card pad muted">Nenhum e-mail.</div>')+'</div>'+
+      '<div class="card pad">'+
+        '<div class="section-title" style="margin-bottom:12px">Gatilhos configurados</div>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Evento</th><th>Destinatário</th><th>Enviados</th></tr></thead><tbody>'+
+        [['submetido','MOC submetido','Aprovadores'],['lembrete','Lembrete de aprovação (automático)','Aprovador pendente'],
+         ['aprovado','MOC aprovado','Solicitante'],['rejeitado','MOC rejeitado','Solicitante'],
+         ['finalizado','MOC finalizado','Solicitante + aprovadores'],['acaoVencida','Ação vencida','Responsável da ação']]
+        .map(r=>'<tr><td style="font-weight:600">'+r[1]+'</td><td class="tiny">'+r[2]+'</td><td><span class="pill info">'+cont(r[0])+'</span></td></tr>').join('')+
+        '</tbody></table></div>'+
+        '<div class="note" style="margin-top:14px"><b>Regra de lembrete:</b> disparado '+slaLembrete()+' dia(s) antes do vencimento da aprovação, repetido diariamente até a decisão. Configurável em <b>SLAs e Prazos</b>.</div>'+
+      '</div>'+
+    '</div>';
+}
+
+
+/* ============================================================
+   MÓDULO 2 — PAINEL ANALÍTICO (BI integrado)
+   Gráficos em SVG puro, sem biblioteca externa.
+   ============================================================ */
+let fBI = {de:'2020-01-01', ate:'2026-07-15', site:'', resp:'', status:'', dim:''};
+
+function dadosBI(){
+  let u = universo();
+  u = u.filter(m=>m.criado>=fBI.de && m.criado<=fBI.ate);
+  if(fBI.site)   u = u.filter(m=>m.site===fBI.site);
+  if(fBI.resp)   u = u.filter(m=>m.solicitante===fBI.resp);
+  if(fBI.status) u = u.filter(m=>m.status===fBI.status);
+  if(fBI.dim)    u = u.filter(m=>(m.impactos||[]).includes(fBI.dim));
+  return u;
+}
+
+function vPainel(){
+  return '<div class="filters" id="biFilters">'+
+    '<span class="lb">Período</span>'+
+    '<input type="date" style="width:145px" value="'+fBI.de+'" onchange="fBI.de=this.value;render()">'+
+    '<span class="tiny">até</span>'+
+    '<input type="date" style="width:145px" value="'+fBI.ate+'" onchange="fBI.ate=this.value;render()">'+
+    '<select onchange="fBI.site=this.value;render()">'+opt([''].concat(SITES), fBI.site, v=>v||'Todas as unidades')+'</select>'+
+    '<select onchange="fBI.resp=this.value;render()">'+opt([''].concat(PEOPLE.filter(p=>p.id!=='tamires'&&p.id!=='marta'&&p.id!=='flavio').map(p=>p.id)), fBI.resp, v=>v?pName(v):'Todos os responsáveis')+'</select>'+
+    '<select onchange="fBI.status=this.value;render()">'+opt(['','rascunho','conceito','execucao','concluido','rejeitado'], fBI.status, v=>v?STATUS[v].lb:'Todos os status')+'</select>'+
+    '<select onchange="fBI.dim=this.value;render()">'+opt([''].concat(DIMS.map(d=>d.id)), fBI.dim, v=>v?dimById(v).nome:'Todos os impactos')+'</select>'+
+    '<div class="spacer"></div>'+
+    '<button class="btn ghost sm" onclick="fBI={de:\'2020-01-01\',ate:\'2026-07-15\',site:\'\',resp:\'\',status:\'\',dim:\'\'};render();toast(\'Filtros limpos\')">Limpar</button>'+
+    '<button class="btn ghost sm" onclick="exportar(\'Painel\')">Exportar</button>'+
+  '</div>'+
+  '<div id="biBody"></div>';
+}
+
+/* ---------------- helpers de SVG ---------------- */
+function svgDonut(dados, size){
+  size = size||190;
+  const tot = dados.reduce((s,d)=>s+d.v,0) || 1;
+  const r = size/2-16, cx = size/2, cy = size/2, C = 2*Math.PI*r;
+  let off = 0;
+  const arcs = dados.map(d=>{
+    const len = d.v/tot*C;
+    const s = '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+d.c+'" stroke-width="26" '+
+      'stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 '+cx+' '+cy+')">'+
+      '<title>'+d.lb+': '+d.v+' ('+Math.round(d.v/tot*100)+'%)</title></circle>';
+    off += len; return s;
+  }).join('');
+  return '<svg class="chart" viewBox="0 0 '+size+' '+size+'" style="max-width:'+size+'px">'+arcs+
+    '<text x="'+cx+'" y="'+(cy-2)+'" text-anchor="middle" font-family="Poppins" font-size="26" font-weight="700" fill="#0e2438">'+tot+'</text>'+
+    '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="10.5" fill="#86939f">MOCs</text></svg>';
+}
+function legenda(dados){
+  const tot = dados.reduce((s,d)=>s+d.v,0)||1;
+  return '<div class="legend">'+dados.map(d=>'<span><i style="background:'+d.c+'"></i>'+d.lb+' — <b>'+d.v+'</b> ('+Math.round(d.v/tot*100)+'%)</span>').join('')+'</div>';
+}
+function svgBarsH(dados, w){
+  w = w||420;
+  const max = Math.max(1, ...dados.map(d=>d.v));
+  const h = dados.length*30+10;
+  return '<svg class="chart" viewBox="0 0 '+w+' '+h+'" style="width:100%">'+dados.map((d,i)=>{
+    const y = i*30+6, bw = d.v/max*(w-160);
+    return '<text x="0" y="'+(y+14)+'" font-size="11.5" fill="#4d6175" font-weight="600">'+esc(d.lb.slice(0,22))+'</text>'+
+      '<rect x="150" y="'+y+'" width="'+Math.max(bw,2)+'" height="18" rx="4" fill="'+(d.c||'#0060A8')+'"><title>'+esc(d.lb)+': '+d.v+'</title></rect>'+
+      '<text x="'+(150+Math.max(bw,2)+7)+'" y="'+(y+13)+'" font-size="11" font-weight="700" fill="#0e2438">'+d.v+'</text>';
+  }).join('')+'</svg>';
+}
+function svgLinhas(series, labels, w, h){
+  w=w||760; h=h||220;
+  const pad = {l:34, r:10, t:12, b:26};
+  const max = Math.max(1, ...series.flatMap(s=>s.pts));
+  const iw = w-pad.l-pad.r, ih = h-pad.t-pad.b;
+  const X = i => pad.l + (labels.length<2?iw/2:i/(labels.length-1)*iw);
+  const Y = v => pad.t + ih - v/max*ih;
+  const grid = [0,.25,.5,.75,1].map(f=>'<line x1="'+pad.l+'" y1="'+(pad.t+ih-f*ih)+'" x2="'+(w-pad.r)+'" y2="'+(pad.t+ih-f*ih)+'" stroke="#eef2f6"/>'+
+    '<text x="'+(pad.l-6)+'" y="'+(pad.t+ih-f*ih+3)+'" text-anchor="end" font-size="9.5" fill="#86939f">'+Math.round(max*f)+'</text>').join('');
+  const lines = series.map(s=>{
+    const d = s.pts.map((v,i)=>(i?'L':'M')+X(i)+' '+Y(v)).join(' ');
+    return '<path d="'+d+'" fill="none" stroke="'+s.c+'" stroke-width="2.2" stroke-linejoin="round"/>'+
+      s.pts.map((v,i)=>'<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="2.6" fill="'+s.c+'"><title>'+s.lb+' · '+labels[i]+': '+v+'</title></circle>').join('');
+  }).join('');
+  const xl = labels.map((l,i)=> (labels.length>14 && i%3) ? '' :
+    '<text x="'+X(i)+'" y="'+(h-8)+'" text-anchor="middle" font-size="9.5" fill="#86939f">'+l+'</text>').join('');
+  return '<svg class="chart" viewBox="0 0 '+w+' '+h+'" style="width:100%">'+grid+lines+xl+'</svg>';
+}
+function svgFunil(etapas, w){
+  w=w||460;
+  const max = Math.max(1, ...etapas.map(e=>e.v));
+  const h = etapas.length*38+8;
+  return '<svg class="chart" viewBox="0 0 '+w+' '+h+'" style="width:100%">'+etapas.map((e,i)=>{
+    const y=i*38+4, bw=Math.max(e.v/max*(w-190),3);
+    return '<text x="0" y="'+(y+18)+'" font-size="11.5" font-weight="600" fill="#4d6175">'+esc(e.lb)+'</text>'+
+      '<rect x="175" y="'+y+'" width="'+bw+'" height="26" rx="5" fill="url(#fg'+i+')"><title>'+e.lb+': '+e.v+'</title></rect>'+
+      '<defs><linearGradient id="fg'+i+'"><stop offset="0" stop-color="#0060A8"/><stop offset="1" stop-color="#5fc0f5"/></linearGradient></defs>'+
+      '<text x="'+(175+bw+8)+'" y="'+(y+17)+'" font-size="11.5" font-weight="700" fill="#0e2438">'+e.v+'</text>';
+  }).join('')+'</svg>';
+}
+
+/* ---------------- render do painel ---------------- */
+function drawPainel(){
+  const u = dadosBI();
+  const host = el('biBody'); if(!host) return;
+
+  /* Seção 1 — sumário
+     Categorias mutuamente exclusivas: concluído + rejeitado + ativo-em-atraso + ativo-no-prazo = total.
+     "Em atraso" conta só o que está ATIVO e fora do prazo — é o que exige ação hoje.
+     O atraso histórico (MOC que fechou fora do prazo) aparece na taxa de conclusão no prazo. */
+  const concl    = u.filter(m=>m.status==='concluido');
+  const rej      = u.filter(m=>m.status==='rejeitado');
+  const ativos   = u.filter(m=>m.status!=='concluido' && m.status!=='rejeitado');
+  const atras    = ativos.filter(m=>m.atraso);
+  const noPrazo  = ativos.filter(m=>!m.atraso);
+  const conclOk  = concl.filter(m=>!m.atraso);
+  const pct = n => u.length?Math.round(n/u.length*100)+'%':'0%';
+  const s1 = '<div class="stat-grid">'+
+    '<div class="stat"><span class="bar"></span><div class="lb">Total de MOCs</div><div class="vl">'+u.length+'</div><div class="sub">desde '+fmt(fBI.de)+'</div></div>'+
+    '<div class="stat g"><span class="bar"></span><div class="lb">Concluídos</div><div class="vl">'+concl.length+'</div><div class="sub">'+pct(concl.length)+' do total</div></div>'+
+    '<div class="stat r"><span class="bar"></span><div class="lb">Em atraso</div><div class="vl">'+atras.length+'</div><div class="sub">'+pct(atras.length)+' · em andamento, fora do prazo</div></div>'+
+    '<div class="stat y"><span class="bar"></span><div class="lb">No prazo</div><div class="vl">'+noPrazo.length+'</div><div class="sub">'+pct(noPrazo.length)+' · em andamento, dentro do prazo</div></div>'+
+  '</div>';
+
+  const donut = [
+    {lb:'Concluídos', v:concl.length, c:'#1f9d57'},
+    {lb:'Em andamento · no prazo', v:noPrazo.length, c:'#0060A8'},
+    {lb:'Em andamento · em atraso', v:atras.length, c:'#d6336c'},
+    {lb:'Rejeitados', v:rej.length, c:'#9aa6b2'},
+  ];
+
+  /* Seção 2 — série histórica */
+  const anos = [];
+  for(let y=s2d(fBI.de).getFullYear(); y<=s2d(fBI.ate).getFullYear(); y++) anos.push(y);
+  const labels = [], sConcl=[], sAtras=[], sTot=[];
+  anos.forEach(y=>{
+    for(let q=0;q<4;q++){
+      const ini = new Date(y,q*3,1), fim = new Date(y,q*3+3,0);
+      if(d2s(ini)>fBI.ate) return;
+      const inQ = u.filter(m=>m.criado>=d2s(ini) && m.criado<=d2s(fim));
+      if(!inQ.length && d2s(fim)>fBI.ate) return;
+      labels.push('Q'+(q+1)+'/'+String(y).slice(2));
+      sTot.push(inQ.length);
+      sConcl.push(inQ.filter(m=>m.status==='concluido').length);
+      sAtras.push(inQ.filter(m=>m.atraso).length);
+    }
+  });
+  const s2 = '<div class="card pad" style="margin-bottom:16px">'+
+    '<div class="panel-head"><div><div class="section-title">Série histórica</div><div class="muted">MOCs abertos por trimestre desde 2020</div></div></div>'+
+    svgLinhas([{lb:'Total',pts:sTot,c:'#0060A8'},{lb:'Concluídos',pts:sConcl,c:'#1f9d57'},{lb:'Em atraso',pts:sAtras,c:'#d6336c'}], labels)+
+    '<div class="legend"><span><i style="background:#0060A8"></i>Total aberto</span><span><i style="background:#1f9d57"></i>Concluídos</span><span><i style="background:#d6336c"></i>Em atraso</span></div>'+
+  '</div>';
+
+  /* Seção 3 — ciclo de vida */
+  const funil = CICLO.map(c=>({lb:c, v:u.filter(m=>(STATUS[m.status]||{}).lb===c).length}));
+
+  /* Seção 4 — geográfica */
+  const geo = [];
+  SITES.forEach(s=>{
+    const inS = u.filter(m=>m.site===s);
+    const at = inS.filter(m=>m.status!=='concluido' && m.status!=='rejeitado');
+    geo.push({site:s, tot:inS.length, con:inS.filter(m=>m.status==='concluido').length,
+              atr:at.filter(m=>m.atraso).length, ok:at.filter(m=>!m.atraso).length});
+  });
+  const areasTop = {};
+  u.forEach(m=>{ areasTop[m.area]=(areasTop[m.area]||0)+1; });
+  const areasArr = Object.keys(areasTop).map(a=>({lb:a, v:areasTop[a], c:'#0060A8'})).sort((a,b)=>b.v-a.v).slice(0,8);
+
+  /* Seção 5 — responsabilidades */
+  const resps = {};
+  u.forEach(m=>{
+    const r = resps[m.solicitante] = resps[m.solicitante] || {tot:0, con:0, atr:0, imp:{}};
+    r.tot++; if(m.status==='concluido') r.con++; if(m.atraso) r.atr++;
+    (m.impactos||[]).forEach(i=>r.imp[i]=(r.imp[i]||0)+1);
+  });
+  const respArr = Object.keys(resps).map(k=>Object.assign({id:k}, resps[k])).sort((a,b)=>b.tot-a.tot);
+
+  /* Seção 6 — ações */
+  const acAll = MOCS.flatMap(m=>m.acoes);
+  const acDon = [
+    {lb:'Concluídas', v:acAll.filter(a=>a.status==='concluida').length, c:'#1f9d57'},
+    {lb:'Em progresso', v:acAll.filter(a=>a.status==='andamento').length, c:'#0060A8'},
+    {lb:'Abertas', v:acAll.filter(a=>a.status==='aberta').length, c:'#9aa6b2'},
+    {lb:'Em atraso', v:acAll.filter(a=>a.status==='atrasada').length, c:'#d6336c'},
+  ];
+  const acAtras = MOCS.flatMap(m=>m.acoes.filter(a=>a.status==='atrasada').map(a=>({a,m})));
+
+  /* Seção 7 — impactos */
+  const impArr = DIMS.map(d=>({lb:d.nome, v:u.filter(m=>(m.impactos||[]).includes(d.id)).length, c:d.cor}));
+
+  host.innerHTML = s1+
+  '<div class="grid2" style="align-items:start;margin-bottom:16px">'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div class="section-title">Sumário de MOCs</div>'+
+        '<span class="pill ok"><span style="width:6px;height:6px;border-radius:50%;background:#1f9d57;display:inline-block"></span> tempo real</span></div>'+
+      '<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><div>'+svgDonut(donut)+'</div>'+
+      '<div style="flex:1;min-width:180px">'+legenda(donut)+
+        '<div class="note" style="margin-top:14px"><b>Taxa de conclusão no prazo:</b> '+
+        (concl.length?Math.round(conclOk.length/concl.length*100):0)+'% <span class="tiny">(meta: &gt; 90%)</span><br>'+
+        '<span class="tiny">'+(concl.length-conclOk.length)+' MOC(s) concluído(s) fora do prazo — contam como concluídos, não como atraso ativo.</span></div></div></div>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div><div class="section-title">Status do ciclo de vida</div>'+
+        '<div class="muted">Onde estão os MOCs hoje</div></div></div>'+
+      svgFunil(funil)+
+    '</div>'+
+  '</div>'+
+  s2+
+  '<div class="grid2" style="align-items:start;margin-bottom:16px">'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div><div class="section-title">Análise geográfica</div><div class="muted">Distribuição por unidade</div></div></div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Unidade</th><th>Total</th><th>Concluídos</th><th>Em atraso</th><th>No prazo</th></tr></thead><tbody>'+
+        // "Em atraso" e "No prazo" contam apenas MOCs em andamento
+        geo.map(g=>'<tr><td style="font-weight:700">'+g.site+'</td><td><b>'+g.tot+'</b></td>'+
+          '<td><span class="pill ok">'+g.con+'</span></td><td><span class="pill danger">'+g.atr+'</span></td>'+
+          '<td><span class="pill info">'+g.ok+'</span></td></tr>').join('')+
+      '</tbody></table></div>'+
+      '<div class="section-title" style="margin:18px 0 10px;font-size:13px">Top áreas</div>'+svgBarsH(areasArr)+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div><div class="section-title">Indicadores de impacto</div><div class="muted">Onde o MOC impacta</div></div></div>'+
+      svgBarsH(impArr)+
+      '<div class="note" style="margin-top:14px"><b>Qualidade</b> aparece em '+
+        (u.length?Math.round(u.filter(m=>(m.impactos||[]).includes('qual')).length/u.length*100):0)+
+        '% dos MOCs — é a dimensão que o sistema global deixou de cobrir.</div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="card pad" style="margin-bottom:16px">'+
+    '<div class="panel-head"><div><div class="section-title">Responsabilidade e aprovação</div>'+
+      '<div class="muted">Quem iniciou o MOC, onde ele está e qual o impacto</div></div>'+
+      '<button class="btn ghost sm" onclick="exportar(\'Responsáveis\')">Exportar</button></div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Responsável</th><th>Área</th><th>Total</th><th>Concluídos</th><th>Em atraso</th><th>Aprovação atual</th><th>Áreas de impacto</th></tr></thead><tbody>'+
+      respArr.map(r=>{
+        const pend = MOCS.filter(m=>m.solicitante===r.id && m.status==='conceito');
+        const onde = pend.length ? pend.map(m=>{const a=proximoAprovador(m); return a?pName(a.pessoa):'—';}).slice(0,2).join(', ') : '—';
+        const imps = Object.keys(r.imp).sort((a,b)=>r.imp[b]-r.imp[a]).slice(0,3);
+        return '<tr><td>'+avatarChip(r.id)+'</td><td class="tiny">'+esc(pArea(r.id))+'</td>'+
+          '<td><b>'+r.tot+'</b></td><td><span class="pill ok">'+r.con+'</span></td>'+
+          '<td>'+(r.atr?'<span class="pill danger">'+r.atr+'</span>':'<span class="pill neutral">0</span>')+'</td>'+
+          '<td class="tiny">'+(pend.length?'<b>'+pend.length+'</b> aguardando: '+esc(onde):'—')+'</td>'+
+          '<td>'+imps.map(i=>'<span class="pill" style="background:'+dimById(i).cor+'22;color:'+dimById(i).cor+';margin:1px">'+esc(dimById(i).nome)+'</span>').join('')+'</td></tr>';
+      }).join('')+
+    '</tbody></table></div>'+
+  '</div>'+
+  '<div class="grid2" style="align-items:start">'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div><div class="section-title">Gestão de ações</div><div class="muted">Status consolidado</div></div></div>'+
+      '<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">'+
+        '<div>'+svgDonut(acDon,170)+'</div><div style="flex:1;min-width:170px">'+legenda(acDon)+'</div></div>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="panel-head"><div><div class="section-title">Ações em atraso</div><div class="muted">Bloqueiam o encerramento do MOC</div></div>'+
+        '<span class="pill danger">'+acAtras.length+'</span></div>'+
+      (acAtras.length?'<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>MOC</th><th>Responsável</th><th>Atraso</th></tr></thead><tbody>'+
+        acAtras.map(x=>'<tr class="clk" onclick="abrirMOC(\''+x.m.id+'\',\'acoes\')">'+
+          '<td style="font-weight:600">'+esc(x.a.titulo)+'</td>'+
+          '<td class="tiny mono">'+x.m.id.slice(-5)+'</td>'+
+          '<td class="tiny">'+esc(pName(x.a.resp))+'</td>'+
+          '<td><span class="pill danger">'+Math.abs(diffDias(HOJE_S,x.a.venc))+' dias</span></td></tr>').join('')+
+        '</tbody></table></div>':'<div class="muted" style="padding:24px;text-align:center">Nenhuma ação em atraso.</div>')+
+    '</div>'+
+  '</div>'+
+  '<div class="tiny" style="margin-top:14px;text-align:right">Última atualização: '+fmt(HOJE_S)+' · o painel reflete os dados inseridos no Módulo 1 em tempo real, sem ferramenta externa.</div>';
+}
+
+
+/* ============================================================
+   CONFIGURAÇÃO E ADMINISTRAÇÃO
+   ============================================================ */
+function soAdmin(){
+  return '<div class="card pad muted" style="text-align:center;padding:50px">'+
+    'Esta área é exclusiva do <b>Administrador Master</b>.<br>'+
+    '<span class="tiny">Troque o perfil no topo da tela para "Admin Master" e veja como a Vânia administra o sistema.</span></div>';
+}
+
+/* ---------------- questionário ---------------- */
+function vCfgQuest(){
+  if(ROLE!=='admin') return soAdmin();
+  return '<div class="note"><b>O coração do sistema.</b> Cada questão respondida com "Sim" gera um item de ação com responsável e prazo padrão. '+
+    'Questões marcadas como <b>críticas</b> classificam o MOC como complexo sozinhas. '+
+    'A lista definitiva de perguntas será consolidada pela área de negócio — este cadastro permite ajustar sem depender de desenvolvimento.</div>'+
+    '<div class="qual-note"><b>Bloco de Qualidade ('+QUESTOES.filter(q=>q.dim==='qual').length+' questões):</b> é a lacuna que motivou o projeto. '+
+    'O sistema global removeu as perguntas de qualidade; aqui elas são cadastráveis e obrigatórias.</div>'+
+    '<div class="filters"><span class="lb">Regra de complexidade</span>'+
+      '<span class="tiny">Gatilho de "Sim" para virar complexo:</span>'+
+      '<input type="number" min="1" max="10" style="width:70px" value="'+REGRA.gatilhoSins+'" onchange="REGRA.gatilhoSins=+this.value;toast(\'Regra atualizada — MOCs serão reclassificados\');render()">'+
+      '<span class="tiny">· Aprovadores: simples</span>'+
+      '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.simplesAprov+'" onchange="REGRA.simplesAprov=+this.value;render()">'+
+      '<span class="tiny">complexo</span>'+
+      '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.complexoAprov+'" onchange="REGRA.complexoAprov=+this.value;render()">'+
+    '</div>'+
+    DIMS.map(d=>{
+      const qs = QUESTOES.filter(q=>q.dim===d.id);
+      return '<div class="card pad" style="margin-bottom:14px'+(d.destaque?';border-color:#ddd0fa':'')+'">'+
+        '<div class="panel-head"><div class="dim-h" style="margin:0"><span class="dot" style="background:'+d.cor+'"></span>'+
+          '<h4>'+d.nome+'</h4>'+(d.destaque?'<span class="pill qual">exclusivo da unidade</span>':'')+
+          '<span class="tiny">'+qs.length+' questões</span></div>'+
+          '<button class="btn ghost sm" onclick="toast(\'Protótipo: cadastro de nova questão\')">+ Questão</button></div>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Questão</th><th>Ação gerada</th><th>Responsável padrão</th><th>Prazo</th><th>Crítica</th></tr></thead><tbody>'+
+        qs.map(q=>'<tr><td style="font-weight:600;min-width:250px">'+esc(q.txt)+'</td>'+
+          '<td class="tiny">'+esc(q.acao)+'</td><td class="tiny">'+esc(pName(q.resp))+'</td>'+
+          '<td class="tiny">'+q.dias+' dias</td>'+
+          '<td>'+(q.critica?'<span class="pill danger">Sim</span>':'<span class="pill neutral">Não</span>')+'</td></tr>').join('')+
+        '</tbody></table></div></div>';
+    }).join('');
+}
+
+/* ---------------- aprovadores padrão ---------------- */
+function vCfgAprov(){
+  if(ROLE!=='admin') return soAdmin();
+  return '<div class="note"><b>Régua de aprovação.</b> Define quem aprova cada combinação de tipo × complexidade. '+
+    'Ao submeter um MOC, o sistema pré-preenche os aprovadores conforme esta tabela — o solicitante pode ajustar antes de enviar.</div>'+
+    CFG_APROV.map((c,ci)=>'<div class="card pad" style="margin-bottom:14px">'+
+      '<div class="panel-head"><div class="section-title">MOC '+c.tipo+' · '+c.complexidade+
+        ' <span class="pill '+(c.complexidade==='Complexo'?'danger':'ok')+'">'+c.papeis.length+' aprovadores</span></div></div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Nível</th><th>Papel</th><th>Aprovador padrão</th><th>Área</th><th>SLA</th></tr></thead><tbody>'+
+      c.papeis.map((p,i)=>'<tr><td><b>'+(i+1)+'</b></td><td style="font-weight:600">'+esc(p)+'</td>'+
+        '<td><select onchange="CFG_APROV['+ci+'].pessoas['+i+']=this.value;toast(\'Aprovador padrão atualizado\')">'+
+          PEOPLE.filter(x=>x.id!=='tamires').map(x=>'<option value="'+x.id+'"'+(x.id===c.pessoas[i]?' selected':'')+'>'+esc(x.nome)+'</option>').join('')+
+        '</select></td><td class="tiny">'+esc(pArea(c.pessoas[i]))+'</td>'+
+        '<td class="tiny">'+(c.complexidade==='Complexo'?7:5)+' dias</td></tr>').join('')+
+      '</tbody></table></div></div>').join('');
+}
+
+/* ---------------- SLAs ---------------- */
+function vCfgSla(){
+  if(ROLE!=='admin') return soAdmin();
+  return '<div class="note"><b>Prazos do processo.</b> Controlam o que o painel marca como atraso e quando o lembrete automático dispara. '+
+    'Os valores abaixo são uma proposta — a área de negócio ainda vai definir os números oficiais.</div>'+
+    '<div class="card pad">'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Etapa / processo</th><th>Aplica-se a</th><th>Prazo (dias)</th><th>Efeito</th></tr></thead><tbody>'+
+    SLAS.map((s,i)=>'<tr><td style="font-weight:600">'+esc(s.etapa)+'</td>'+
+      '<td><span class="pill '+(s.tipo==='Complexo'?'danger':s.tipo==='Simples'?'ok':'neutral')+'">'+s.tipo+'</span></td>'+
+      '<td><input type="number" min="1" style="width:80px" value="'+s.dias+'" onchange="SLAS['+i+'].dias=+this.value;toast(\'SLA atualizado\');render()"></td>'+
+      '<td class="tiny">'+esc(slaEfeito(s.etapa))+'</td></tr>').join('')+
+    '</tbody></table></div>'+
+    '<div class="note" style="margin-top:16px;border-left-color:var(--warn);background:var(--warn-soft)">'+
+      '<b>Janela do MOC:</b> o sistema bloqueia a criação de MOC cuja janela planejada exceda '+
+      (SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias — a regra citada na reunião ("se o projeto é de três meses, tem que iniciar e terminar dentro dos três meses").</div>'+
+    '</div>';
+}
+function slaEfeito(e){
+  if(e.indexOf('Lembrete')===0) return 'Dispara e-mail de lembrete automático antes do vencimento';
+  if(e.indexOf('Janela')===0) return 'Bloqueia a criação do MOC e marca atraso no painel';
+  if(e.indexOf('Aprovação')===0) return 'Define o prazo do aprovador e o sinal de vencido no painel';
+  if(e.indexOf('Conclusão')===0) return 'Vencimento padrão das ações geradas automaticamente';
+  return 'Monitorado no painel analítico';
+}
+
+/* ---------------- usuários ---------------- */
+let fUser = '';
+function vUsers(){
+  if(ROLE!=='admin') return soAdmin();
+  const list = fUser ? PEOPLE.filter(p=>(p.nome+p.email+p.area).toLowerCase().includes(fUser.toLowerCase())) : PEOPLE;
+  return '<div class="note"><b>Administração master.</b> A demanda literal da reunião: "eu vou ser um administrador master, que eu consiga adicionar pessoa, tirar pessoas, '+
+    'que eu possa mexer no sistema pra fazer os ajustes". Inclui o perfil <b>Visualizador</b> (somente leitura) — que na reunião foi solicitado para a Tamires.</div>'+
+    '<div class="filters"><span class="lb">Buscar</span>'+
+      '<input type="text" style="width:240px" placeholder="Nome, e-mail ou área" value="'+esc(fUser)+'" oninput="fUser=this.value;clearTimeout(window._fu);window._fu=setTimeout(render,250)">'+
+      '<div class="spacer"></div><button class="btn sm" onclick="addUser()">+ Adicionar usuário</button></div>'+
+    '<div class="card"><div class="tbl-wrap"><table><thead><tr>'+
+      '<th>Nome</th><th>E-mail</th><th>Área</th><th>Unidade</th><th>Nível de acesso</th><th>Status</th><th></th></tr></thead><tbody>'+
+      list.map((p,i)=>'<tr>'+
+        '<td>'+avatarChip(p.id)+'</td><td class="tiny">'+esc(p.email)+'</td><td class="tiny">'+esc(p.area)+'</td><td class="tiny">'+esc(p.site)+'</td>'+
+        '<td><select onchange="mudaPapel(\''+p.id+'\',this.value)">'+
+          ['Administrador Master','Aprovador','Solicitante','Visualizador'].map(x=>'<option'+(x===p.papel?' selected':'')+'>'+x+'</option>').join('')+
+        '</select></td>'+
+        '<td>'+(p.inativo?'<span class="pill neutral">Inativo</span>':'<span class="pill ok">Ativo</span>')+'</td>'+
+        '<td style="white-space:nowrap"><button class="btn ghost sm" onclick="togUser(\''+p.id+'\')">'+(p.inativo?'Ativar':'Desativar')+'</button> '+
+        '<button class="btn ghost sm" onclick="delUser(\''+p.id+'\')">Remover</button></td>'+
+      '</tr>').join('')+
+    '</tbody></table></div></div>'+
+    '<div class="grid2" style="margin-top:16px;align-items:start">'+
+      '<div class="card pad"><div class="section-title" style="margin-bottom:10px">O que cada perfil pode fazer</div>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Perfil</th><th>Cria MOC</th><th>Aprova</th><th>Configura</th><th>Vê o painel</th></tr></thead><tbody>'+
+        [['Administrador Master','Sim','Sim','Sim','Todos os MOCs'],
+         ['Aprovador','Sim','Sim','Não','MOCs onde participa'],
+         ['Solicitante','Sim','Não','Não','MOCs onde participa'],
+         ['Visualizador','Não','Não','Não','Somente leitura']]
+        .map(r=>'<tr><td style="font-weight:700">'+r[0]+'</td>'+r.slice(1).map(c=>'<td>'+(c==='Sim'?'<span class="pill ok">Sim</span>':c==='Não'?'<span class="pill neutral">Não</span>':'<span class="tiny">'+c+'</span>')+'</td>').join('')+'</tr>').join('')+
+        '</tbody></table></div></div>'+
+      '<div class="card pad"><div class="section-title" style="margin-bottom:10px">Restrições de acesso</div>'+
+        '<div class="note">Na reunião ficou registrado que o sistema atual <b>não libera acesso a quem não é Unilever</b> — nem como visualizador. '+
+        'Como a nova plataforma é independente, o controle passa a ser desta tela: o administrador decide quem entra, com qual perfil, sem depender de política corporativa de terceiros.</div>'+
+        '<ul class="bul"><li><b>Domínio permitido:</b> configurável por lista de e-mails ou domínio</li>'+
+        '<li><b>Visualizador externo:</b> permitido, somente leitura, sem acesso a anexos</li>'+
+        '<li><b>Autenticação:</b> login próprio ou SSO, conforme a decisão de infraestrutura</li></ul></div>'+
+    '</div>';
+}
+function mudaPapel(id,v){ const p=PEOPLE.find(x=>x.id===id); p.papel=v; toast(pName(id)+' agora é '+v,'ok'); }
+function togUser(id){ const p=PEOPLE.find(x=>x.id===id); p.inativo=!p.inativo; toast(pName(id)+(p.inativo?' desativado':' reativado')); render(); }
+function delUser(id){
+  modal('Remover usuário', '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft)">'+
+    'Remover <b>'+esc(pName(id))+'</b> do sistema? Os MOCs históricos preservam o nome para a trilha de auditoria.</div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button>'+
+    '<button class="btn danger" onclick="PEOPLE.splice(PEOPLE.findIndex(x=>x.id===\''+id+'\'),1);closeModal();toast(\'Usuário removido\');render()">Remover</button>');
+}
+function addUser(){
+  modal('Adicionar usuário',
+    '<div class="grid2"><div class="fld"><label class="fld-l">Nome *</label><input type="text" id="nuN"></div>'+
+    '<div class="fld"><label class="fld-l">E-mail *</label><input type="text" id="nuE"></div></div>'+
+    '<div class="grid2"><div class="fld"><label class="fld-l">Área</label><input type="text" id="nuA" value="Operações"></div>'+
+    '<div class="fld"><label class="fld-l">Unidade</label><select id="nuS">'+opt(SITES,'Pouso Alegre')+'</select></div></div>'+
+    '<div class="fld"><label class="fld-l">Nível de acesso</label><select id="nuP">'+
+      ['Solicitante','Aprovador','Administrador Master','Visualizador'].map(x=>'<option>'+x+'</option>').join('')+'</select></div>'+
+    '<div id="nuErr"></div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="salvaUser()">Adicionar</button>');
+}
+function salvaUser(){
+  const n = el('nuN').value.trim(), e = el('nuE').value.trim();
+  if(!n||!e){ el('nuErr').innerHTML='<div class="err-msg">Nome e e-mail são obrigatórios.</div>'; return; }
+  PEOPLE.push({id:'u'+Date.now(), nome:n, email:e, area:el('nuA').value, site:el('nuS').value, papel:el('nuP').value});
+  closeModal(); toast('Usuário '+n+' adicionado','ok'); render();
+}
+
+/* ============================================================
+   TELA: MANUAL DO SISTEMA
+   ============================================================ */
+const HELP = [
+  ['O que é este protótipo?','Um mock navegável da solução MOC-SHE, construído a partir da reunião de requisitos de 15/07/2026 (Vânia Barbosa, Tamires Cavani, Flávio Brianezi). Ele existe para validar o escopo antes de desenvolver: tudo que você clica funciona, mas os dados são fictícios e nada é salvo — recarregar a página volta ao estado inicial.'],
+  ['Por que um sistema próprio, se já existe o MOC global?','Dois motivos levantados na reunião. Primeiro: o sistema global (VelocityEHS) removeu as perguntas de qualidade na última atualização, e a unidade precisa delas por causa das auditorias. Segundo: com a venda da divisão de alimentos, a unidade deixa de ser Unilever e perde o acesso ao sistema global — precisa de plataforma independente antes disso acontecer.'],
+  ['Como testo os diferentes perfis?','Use o seletor no canto superior direito. <b>Admin Master</b> (Vânia) vê tudo e configura o sistema; <b>Solicitante</b> (Leonardo) cria MOCs; <b>Aprovador</b> (Ana, da Qualidade) tem fila de aprovação; <b>Visualizador</b> (Tamires) é somente leitura — os botões de escrita desaparecem.'],
+  ['Como funciona a geração automática de ações?','Na etapa 3 do fluxo (Avaliação de impacto), cada resposta "Sim" gera imediatamente um item de ação com título, responsável e prazo padrão — todos editáveis. Exemplo citado na reunião: "vou quebrar uma parede, então vou precisar de uma caçamba, então abro uma ação pra alguém ficar responsável por esse material."'],
+  ['Como o sistema decide se o MOC é simples ou complexo?','Pela avaliação de impacto. Se houver 4 ou mais respostas "Sim", ou qualquer "Sim" em questão marcada como <b>crítica</b>, o MOC vira complexo. Simples exige 3 aprovadores; complexo exige 5, incluindo Qualidade e SHE. O gatilho é configurável em Configuração → Questionário de Impacto.'],
+  ['Por que o MOC não deixa encerrar?','Regra da reunião: MOC com ação em aberto não é finalizado. O botão "Encerrar MOC" só libera quando todas as ações estiverem concluídas. Ações marcadas como "necessário para iniciar procedimento" também bloqueiam o início da execução.'],
+  ['O que muda nos e-mails em relação ao sistema atual?','Hoje o aprovador recebe o e-mail uma vez e nunca mais é cobrado — foi a queixa literal da Vânia ("recebi e não recebo mais"). Aqui existe lembrete automático disparado antes do vencimento e repetido até a decisão. Veja em Módulo 1 → Notificações de E-mail.'],
+  ['O painel é uma ferramenta separada?','Não. A Vânia pediu que o BI estivesse dentro do próprio sistema, atualizando sozinho conforme as pessoas preenchem. O Módulo 2 lê os mesmos dados do Módulo 1 — sem exportação, sem ferramenta externa, sem atualização manual.'],
+  ['De onde vêm os números do painel?','De uma base fictícia de MOCs desde 2020 (o histórico que a Vânia mostrou no BI dela), somada aos MOCs detalhados que você navega no Módulo 1. Criar ou aprovar um MOC altera o painel na hora.'],
+  ['As perguntas do questionário são as definitivas?','Não. A lista definitiva ficou como ponto de ação da área de negócio ("vou te mandar as perguntas, todo o processo, todo o passo a passo"). As 17 questões aqui são uma proposta baseada no que foi descrito, com ênfase no bloco de Qualidade. O cadastro permite alterar sem desenvolvimento.'],
+  ['Os SLAs estão corretos?','São propostas. Os prazos oficiais ainda serão definidos pela área de negócio. A regra da janela de 90 dias reflete o exemplo dado na reunião: "se o meu projeto é de três meses, ele tem que estar iniciado antes dos três meses e terminar antes dos três meses".'],
+  ['Isso vai ser Power Apps ou web?','A decisão está em aberto — a proposta cobre as duas frentes. Na reunião a inclinação foi por web ("muito provavelmente a gente vai partir pra versão web, porque a gente não sabe nem se vai manter os Power Apps que são dependentes da Unilever"). Este protótipo é web e serve de referência visual para qualquer das duas.'],
+];
+function vAjuda(){
+  return '<div class="note"><b>Protótipo navegável · v1.0</b> — construído sobre a reunião de requisitos de 15/07/2026. '+
+    'Dados fictícios; nada é persistido. Use o <b>Tour</b> no topo para uma visita guiada.</div>'+
+    '<div class="grid2" style="align-items:start">'+
+      '<div>'+HELP.map(h=>'<details class="help-q"><summary>'+esc(h[0])+'</summary><div class="a">'+h[1]+'</div></details>').join('')+'</div>'+
+      '<div class="card pad">'+
+        '<div class="section-title" style="margin-bottom:12px">Cobertura do protótipo</div>'+
+        '<div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>'+
+        [['Login e perfis de acesso','ok'],['Fluxo de criação em 6 etapas','ok'],['Avaliação de impacto + geração de ações','ok'],
+         ['Bloco de Qualidade (lacuna do global)','ok'],['Régua simples × complexo','ok'],['Fluxo de aprovação multinível','ok'],
+         ['Bloqueio por ação em aberto','ok'],['Notificações e lembrete automático','ok'],['Trilha de auditoria','ok'],
+         ['Painel analítico (7 seções)','ok'],['Administração de usuários','ok'],['Configuração de questionário/SLA/aprovadores','ok'],
+         ['Responsividade mobile','ok'],['Persistência em banco','pend'],['Envio real de e-mail','pend'],['Upload de anexo','pend']]
+        .map(r=>'<tr><td>'+r[0]+'</td><td>'+(r[1]==='ok'?'<span class="pill ok">no protótipo</span>':'<span class="pill neutral">no desenvolvimento</span>')+'</td></tr>').join('')+
+        '</tbody></table></div>'+
+        '<div class="section-title" style="margin:18px 0 10px">Pontos ainda em aberto</div>'+
+        '<ul class="bul">'+
+          '<li><b>Lista definitiva de perguntas</b> da avaliação de impacto — área de negócio</li>'+
+          '<li><b>Matriz de complexidade</b> oficial (quantos aprovadores, quais papéis)</li>'+
+          '<li><b>SLAs oficiais</b> de etapas e aprovações</li>'+
+          '<li><b>Decisão Power Apps × web</b> — orçamento nas duas frentes</li>'+
+          '<li><b>Processo passo a passo</b> documentado pela Vânia</li>'+
+        '</ul>'+
+      '</div>'+
+    '</div>';
+}
+
+/* ============================================================
+   TOUR GUIADO
+   ============================================================ */
+const TOUR = [
+  {v:'home', sel:'.stat-grid', t:'Início', p:'Cada perfil abre o sistema vendo o que precisa fazer: MOCs em andamento, o que aguarda a sua aprovação, o que está em atraso e as ações sob sua responsabilidade.'},
+  {v:'home', sel:'#roleSel', t:'Troque de perfil a qualquer momento', p:'Admin Master (Vânia), Solicitante, Aprovador e Visualizador. No perfil Visualizador — o acesso pedido para a Tamires — todos os botões de escrita somem.'},
+  {v:'novo', sel:'.steps', t:'Módulo 1 · Criação em 6 etapas', p:'O fluxo espelha o que a Vânia mostrou: tipo de MOC, informações iniciais, avaliação de impacto, ações, aprovadores e revisão.'},
+  {v:'novo', sel:'.type-cards', t:'Etapa 1 · Permanente ou Temporário', p:'Os dois tipos que existem hoje. O tipo define a régua de aprovadores aplicada no fim do fluxo.'},
+  {v:'moc', tab:'impacto', sel:'.qual-note', t:'O bloco de Qualidade', p:'Aqui está o motivo do projeto: o sistema global removeu as perguntas de qualidade e a unidade precisa delas por causa das auditorias. Neste sistema elas são obrigatórias e cadastráveis.'},
+  {v:'moc', tab:'impacto', sel:'.dim', t:'Cada "Sim" vira uma ação', p:'Responder "Sim" gera automaticamente um item de ação com responsável e prazo — como o exemplo da caçamba citado na reunião. A quantidade e a criticidade das respostas classificam o MOC como simples ou complexo.'},
+  {v:'moc', tab:'aprov', sel:'.tl', t:'Aprovação em níveis', p:'MOC simples: 3 aprovadores. Complexo: 5, incluindo Qualidade e SHE. Cada nível tem prazo próprio e o MOC não avança sem a aprovação anterior.'},
+  {v:'moc', tab:'acoes', sel:'.note', t:'Ação aberta trava o encerramento', p:'Regra literal da reunião: MOC com ação em aberto não é finalizado. O botão de encerrar só aparece quando tudo está concluído.'},
+  {v:'moc', tab:'emails', sel:'.note', t:'Lembrete automático', p:'A queixa da Vânia era que o e-mail chega uma vez e nunca mais. Aqui o lembrete dispara antes do vencimento e se repete até a decisão sair.'},
+  {v:'moc', tab:'trilha', sel:'.tl', t:'Trilha de auditoria', p:'Tudo que aconteceu no MOC fica registrado — é a evidência apresentada nas auditorias que motivaram o projeto.'},
+  {v:'painel', sel:'.stat-grid', t:'Módulo 2 · Painel integrado', p:'"Se for possível já estar dentro do próprio, melhor ainda" — o painel lê os mesmos dados do Módulo 1 e atualiza sozinho. Sem ferramenta externa.'},
+  {v:'painel', sel:'#biFilters', t:'Filtros globais', p:'Período, unidade, responsável, status e tipo de impacto. Toda a página responde ao filtro.'},
+  {v:'cfg-quest', sel:'.qual-note', t:'Configuração sem desenvolvimento', p:'A lista definitiva de perguntas ainda vem da área de negócio. Por isso o questionário, os SLAs e a régua de aprovadores são cadastráveis — ajustar não exige um novo projeto.'},
+  {v:'admin-users', sel:'.filters', t:'Administração master', p:'"Eu vou ser um administrador master, que eu consiga adicionar pessoa, tirar pessoas, que eu possa mexer no sistema pra fazer os ajustes." É esta tela.'},
+  {v:'escopo', sel:'.esc-divider', t:'Escopo da solução', p:'A leitura do escopo dividida por público: o que interessa ao negócio e o que o desenvolvedor precisa construir.'},
+];
+let TSTEP = 0;
+function startTour(){ TSTEP = 0; showTourStep(); }
+function endTour(){ el('tourHost').innerHTML=''; document.querySelectorAll('.tour-hl').forEach(e=>e.classList.remove('tour-hl')); }
+function showTourStep(){
+  const s = TOUR[TSTEP];
+  if(!s){ endTour(); toast('Tour concluído','ok'); return; }
+  if(s.v==='moc' && !CURRENT) CURRENT = MOCS[0].id;
+  if(VIEW!==s.v || (s.tab && MOCTAB!==s.tab)){
+    if(s.tab) MOCTAB = s.tab;
+    switchView(s.v);
+  }
+  setTimeout(()=>{
+    document.querySelectorAll('.tour-hl').forEach(e=>e.classList.remove('tour-hl'));
+    const t = document.querySelector(s.sel);
+    if(t){ t.classList.add('tour-hl'); t.scrollIntoView({block:'center',behavior:'smooth'}); }
+    el('tourHost').innerHTML = '<div id="tourOvl" onclick="endTour()"></div><div id="tourBox">'+
+      '<div class="n">Tour · '+(TSTEP+1)+' de '+TOUR.length+'</div>'+
+      '<h4>'+esc(s.t)+'</h4><p>'+esc(s.p)+'</p>'+
+      '<div class="f">'+(TSTEP>0?'<button class="btn ghost sm" onclick="TSTEP--;showTourStep()">← Anterior</button>':'')+
+      '<div class="spacer"></div><button class="btn ghost sm" onclick="endTour()">Sair</button>'+
+      '<button class="btn sm" onclick="TSTEP++;showTourStep()">'+(TSTEP===TOUR.length-1?'Concluir':'Próximo →')+'</button></div></div>';
+    const box = el('tourBox');
+    if(t){
+      const r = t.getBoundingClientRect();
+      let top = r.bottom + 12, left = Math.max(12, Math.min(r.left, window.innerWidth-360));
+      if(top + 200 > window.innerHeight) top = Math.max(12, r.top - 190);
+      box.style.top = top+'px'; box.style.left = left+'px';
+    } else { box.style.top='50%'; box.style.left='50%'; box.style.transform='translate(-50%,-50%)'; }
+  }, 260);
+}
+
+
+/* ============================================================
+   TELA: ESCOPO DA SOLUÇÃO
+   Dividida por público — negócio × desenvolvedor
+   ============================================================ */
+function vEscopo(){
+  return '<div class="card pad" style="margin-bottom:16px">'+
+    '<div class="section-title" style="font-size:17px">Solução MOC-SHE — escopo funcional</div>'+
+    '<div class="muted" style="margin-top:6px">Base: reunião de requisitos de 15/07/2026 — Vânia Barbosa (SHE), Tamires Cavani (Drive Data), Flávio Brianezi (TI). '+
+      'Sistema atual: VelocityEHS, plataforma global de gestão de EHS.</div>'+
+    '<div class="flow" style="margin-top:16px">'+
+      '<div class="bx">Sistema global<br>(VelocityEHS)</div><span class="ar">→</span>'+
+      '<div class="bx" style="border-color:#d6336c;background:#fdeaf1;color:#9b1c48">Perguntas de qualidade<br>removidas</div><span class="ar">+</span>'+
+      '<div class="bx" style="border-color:#d6336c;background:#fdeaf1;color:#9b1c48">Venda da divisão<br>de alimentos</div><span class="ar">→</span>'+
+      '<div class="bx" style="border-color:#1f9d57;background:#e6f6ed;color:#14663a">Sistema próprio<br>e independente</div>'+
+    '</div>'+
+    '<div class="note"><b>Por que agora:</b> a unidade deixa de ser Unilever e perde o acesso ao sistema global. '+
+      'A plataforma própria precisa existir antes disso — e precisa cobrir a qualidade, que o global deixou de cobrir.</div>'+
+  '</div>'+
+
+  '<div class="esc-divider"><span>Para o negócio</span></div>'+
+
+  '<div class="grid2" style="align-items:start;margin-bottom:16px">'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">O que a solução entrega</div>'+
+      '<ul class="bul">'+
+        '<li><b>Módulo 1 — Gestão de MOC:</b> ciclo completo, da criação ao encerramento, com avaliação de impacto, ações, aprovações e notificações.</li>'+
+        '<li><b>Módulo 2 — Painel analítico:</b> visão gerencial integrada ao próprio sistema, atualizando sozinha.</li>'+
+        '<li><b>Bloco de Qualidade:</b> as perguntas que o sistema global removeu, de volta e obrigatórias.</li>'+
+        '<li><b>Administração master:</b> a Vânia adiciona e remove pessoas e ajusta o sistema sem depender de terceiros.</li>'+
+        '<li><b>Lembrete automático:</b> o aprovador é cobrado até decidir — hoje o e-mail chega uma vez e some.</li>'+
+        '<li><b>Independência:</b> sistema próprio, sem vínculo com a infraestrutura Unilever.</li>'+
+      '</ul>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">Abrangência e faseamento</div>'+
+      '<ul class="bul">'+
+        '<li><b>Piloto:</b> Pouso Alegre.</li>'+
+        '<li><b>Depois:</b> Garanhuns, "provavelmente" — sem data definida.</li>'+
+        '<li><b>Entrega em módulos:</b> "a gente vai complementando, vai fazendo por módulos" — o escopo aceita novas necessidades sem refazer o que já existe.</li>'+
+      '</ul>'+
+      '<div class="section-title" style="margin:18px 0 10px">Decisão tecnológica — em aberto</div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th></th><th>Power Apps</th><th>Web</th></tr></thead><tbody>'+
+        '<tr><td class="tiny"><b>Ambiente</b></td><td class="tiny">Dentro da Microsoft/Unilever</td><td class="tiny">Servidor e hospedagem próprios</td></tr>'+
+        '<tr><td class="tiny"><b>Dependência</b></td><td class="tiny"><span class="pill danger">Atrelado à Unilever</span></td><td class="tiny"><span class="pill ok">Independente</span></td></tr>'+
+        '<tr><td class="tiny"><b>Evolução</b></td><td class="tiny">Limitada pela plataforma</td><td class="tiny">Livre</td></tr>'+
+        '<tr><td class="tiny"><b>Notificação</b></td><td class="tiny">E-mail + Teams</td><td class="tiny">E-mail</td></tr>'+
+      '</tbody></table></div>'+
+      '<div class="note" style="border-left-color:var(--warn);background:var(--warn-soft)">Orçamento nas <b>duas frentes</b>. '+
+        'Inclinação declarada: web — "a gente não sabe nem se vai manter os Power Apps que são dependentes da Unilever".</div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="card pad" style="margin-bottom:16px">'+
+    '<div class="section-title" style="margin-bottom:12px">Jornada do MOC — do pedido ao encerramento</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Etapa</th><th>Quem faz</th><th>O que o sistema faz</th><th>Regra</th></tr></thead><tbody>'+
+    [['1','Adicionar novo MOC','Solicitante','Abre o fluxo e registra o tipo','Permanente ou Temporário'],
+     ['2','Informações iniciais','Solicitante','Valida campos e a janela do MOC','Janela não pode exceder o SLA de 90 dias'],
+     ['3','Avaliação de impacto','Solicitante','<b>Gera as ações automaticamente</b> e classifica a complexidade','Cada "Sim" = 1 ação; "Sim" crítico = MOC complexo'],
+     ['4','Gestão de ações','Solicitante / responsáveis','Atribui responsável e prazo a cada ação','Ação aberta impede o encerramento'],
+     ['5','Aprovadores','Sistema','Pré-preenche a régua conforme tipo × complexidade','Simples: 3 · Complexo: 5'],
+     ['6','Submissão','Solicitante','<b>Dispara e-mail</b> a todos os aprovadores','Confirmação obrigatória'],
+     ['7','Aprovação em níveis','Aprovadores','Encaminha ao próximo nível e lembra quem atrasa','Não avança sem aprovação'],
+     ['8','Execução','Responsáveis','Acompanha ações e prazos','Ação crítica bloqueia o início'],
+     ['9','Encerramento','Responsável','Registra a data e notifica todos','Só com todas as ações concluídas'],
+    ].map(r=>'<tr><td><b>'+r[0]+'</b></td><td style="font-weight:600">'+r[1]+'</td>'+
+      '<td class="tiny">'+r[2]+'</td><td class="tiny">'+r[3]+'</td><td class="tiny">'+r[4]+'</td></tr>').join('')+
+    '</tbody></table></div>'+
+  '</div>'+
+
+  '<div class="esc-divider"><span>Para o desenvolvedor</span></div>'+
+
+  '<div class="grid2" style="align-items:start;margin-bottom:16px">'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">Modelo de dados (núcleo)</div>'+
+      '<div class="tbl-wrap"><table><thead><tr><th>Entidade</th><th>Campos-chave</th></tr></thead><tbody>'+
+      [['MOC','id (MOC-AAAAMMDD-NNNNN), tipo, status, titulo, descricao, justificativa, impactoSHE, tipoAlteracao, impacto, site, area, solicitante, responsavel, participantes[], dtInicio, dtFim, complexo, criadoEm, concluidoEm'],
+       ['Questao','id, dimensao, texto, acaoPadrao, responsavelPadrao, prazoDias, critica'],
+       ['Avaliacao','mocId, questaoId, resposta (sim/nao), observacao, responsavel, vencimento'],
+       ['Acao','id (AC-MOC-…-NNNNN), mocId, questaoId, titulo, descricao, responsavel, vencimento, status, necessarioParaIniciar, concluidaEm'],
+       ['Aprovacao','mocId, nivel, papel, pessoa, status, prazo, decididoEm, comentario'],
+       ['Notificacao','mocId, tipo, destinatario, assunto, corpo, enviadoEm, automatico'],
+       ['Trilha','mocId, evento, autor, data, payload'],
+       ['Usuario','id, nome, email, area, site, papel, ativo'],
+      ].map(r=>'<tr><td style="font-weight:700;white-space:nowrap">'+r[0]+'</td><td class="tiny mono">'+esc(r[1])+'</td></tr>').join('')+
+      '</tbody></table></div>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">Regras que o código precisa garantir</div>'+
+      '<ul class="bul">'+
+        '<li><b>Geração de ação:</b> resposta "Sim" cria ação vinculada à questão; alterar para "Não" remove a ação se ela ainda não foi tocada.</li>'+
+        '<li><b>Complexidade:</b> <span class="mono tiny">complexo = (qtdSins &gt;= gatilho) || (qtdSinsCriticos &gt; 0)</span> — recalculada a cada resposta.</li>'+
+        '<li><b>Bloqueio de encerramento:</b> <span class="mono tiny">acoesAbertas &gt; 0 ⇒ encerrar indisponível</span>.</li>'+
+        '<li><b>Bloqueio de início:</b> ação com <span class="mono tiny">necessarioParaIniciar</span> aberta trava a execução.</li>'+
+        '<li><b>Sequência de aprovação:</b> apenas o próximo aprovador pendente decide; rejeição encerra o fluxo e devolve ao solicitante.</li>'+
+        '<li><b>Lembrete:</b> job diário — <span class="mono tiny">prazo - hoje &lt;= diasLembrete ⇒ enviar</span>, repetindo até a decisão.</li>'+
+        '<li><b>Janela:</b> <span class="mono tiny">dtFim - dtInicio &gt; slaJanela ⇒ bloquear criação</span>.</li>'+
+        '<li><b>Trilha imutável:</b> append-only, sem update nem delete — é a evidência de auditoria.</li>'+
+      '</ul>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="grid2" style="align-items:start;margin-bottom:16px">'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">Parametrização (sem desenvolvimento)</div>'+
+      '<div class="note">A área de negócio ainda vai fechar a lista de perguntas, a matriz de complexidade e os SLAs. '+
+        'Tudo isso precisa ser <b>cadastro</b>, não código — senão cada ajuste vira um novo projeto.</div>'+
+      '<ul class="bul">'+
+        '<li>Questionário de impacto — questões, dimensões, ação padrão, prazo, criticidade</li>'+
+        '<li>Régua de aprovadores — por tipo × complexidade</li>'+
+        '<li>SLAs — por etapa e por tipo de MOC</li>'+
+        '<li>Usuários, perfis e áreas</li>'+
+      '</ul>'+
+    '</div>'+
+    '<div class="card pad">'+
+      '<div class="section-title" style="margin-bottom:10px">Painel — o que o BI precisa ler</div>'+
+      '<ul class="bul">'+
+        '<li><b>Sumário:</b> total, concluídos, em atraso, no prazo — histórico desde 2020</li>'+
+        '<li><b>Série histórica:</b> abertura por trimestre, com concluídos e atrasados</li>'+
+        '<li><b>Ciclo de vida:</b> quantos MOCs em cada etapa</li>'+
+        '<li><b>Geográfica:</b> por unidade e área <span class="tiny">(no BI atual há registros sem área preenchida — validação de campo obrigatório resolve)</span></li>'+
+        '<li><b>Responsabilidade:</b> quem iniciou, onde parou a aprovação, qual o impacto</li>'+
+        '<li><b>Ações:</b> abertas, em atraso, resolvidas, finalizadas</li>'+
+        '<li><b>Impacto:</b> qualidade, maquinário, segurança, ambiente, químicos</li>'+
+      '</ul>'+
+      '<div class="note"><b>Sem ETL:</b> o painel lê a mesma base do Módulo 1. Requisito da reunião — "que esse tipo BI esteja lá dentro, as pessoas vão fazendo e ele já vai atualizando".</div>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="card pad">'+
+    '<div class="section-title" style="margin-bottom:12px">Pontos em aberto — dependem da área de negócio</div>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Responsável</th><th>Impacto se não fechar</th></tr></thead><tbody>'+
+    [['Lista completa de perguntas da avaliação de impacto','Vânia / SHE','Define o questionário e as ações geradas'],
+     ['Processo documentado passo a passo','Vânia / SHE','Confirma etapas, papéis e transições'],
+     ['Matriz de complexidade (quantos e quais aprovadores)','Vânia / SHE','Régua de aprovação'],
+     ['SLAs de etapas e aprovações','Vânia / SHE','Prazos, lembretes e indicadores de atraso'],
+     ['Validação dos requisitos de BI','Vânia / SHE','Fecha as visões do painel'],
+     ['Decisão Power Apps × web','Unilever / Drive Data','Define arquitetura e orçamento'],
+    ].map(r=>'<tr><td style="font-weight:600">'+r[0]+'</td><td class="tiny">'+r[1]+'</td><td class="tiny">'+r[2]+'</td></tr>').join('')+
+    '</tbody></table></div>'+
+    '<div class="note" style="margin-top:14px">Citação da reunião: <i>"quase fechando com você, vou te mandar as perguntas, todo o processo, todo o passo a passo. A gente vai montar e mandar tudo direitinho."</i></div>'+
+  '</div>';
+}
+
+/* ============================================================
+   INICIALIZAÇÃO
+   ============================================================ */
+setRole('admin', true);
+switchView('home');
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeModal(); endTour(); }
+});
+
+</script>
+</body>
+</html>
