@@ -264,6 +264,47 @@
   .help-q[open] summary:before{content:"−"}
   .help-q .a{padding:0 16px 14px 40px;font-size:13px;color:var(--ink-soft);line-height:1.7}
 
+  /* ---------- novo modelo: 3 tipos, gates, funções, questionários ---------- */
+  .type-cards.type-3{grid-template-columns:repeat(3,1fr)}
+  .type-card.emerg.sel{border-color:var(--danger);background:var(--danger-soft);box-shadow:0 10px 26px -14px rgba(214,51,108,.6)}
+  .type-card.emerg .ic{background:var(--danger-soft)}
+  .type-card.emerg.sel .ic{background:#fff}
+  .type-card.emerg .ic svg{stroke:var(--danger)}
+  .emerg-tag{margin-top:10px;font-size:10.5px;font-weight:700;color:#9b1c48;background:#fde3ec;border-radius:7px;padding:4px 8px;display:inline-block}
+
+  .gate-flow{display:flex;gap:0;padding:14px 18px;background:var(--surface-2);border-bottom:1px solid var(--line);overflow-x:auto}
+  .gate{position:relative;flex:1;min-width:104px;padding:9px 10px 9px 26px;background:#eaf0f6;color:var(--ink-faint);font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:8px;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%,14px 50%);margin-right:-8px}
+  .gate:first-child{clip-path:polygon(0 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,0 100%);padding-left:14px}
+  .gate .gn{width:18px;height:18px;border-radius:50%;background:#fff;color:var(--ink-faint);display:grid;place-items:center;font-size:10px;flex:none}
+  .gate .gl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gate.done{background:#d6e4f0;color:var(--brand-deep)}
+  .gate.done .gn{background:var(--brand);color:#fff}
+  .gate.on{background:var(--gc);color:#fff;box-shadow:0 6px 16px -8px var(--gc)}
+  .gate.on .gn{background:#fff;color:var(--gc)}
+  .gate.rej{background:var(--danger);color:#fff}
+  .gate.rej .gn{color:var(--danger)}
+
+  .func-gate{border:1px solid var(--line);border-left:4px solid var(--gc,var(--brand));border-radius:12px;padding:12px 15px;margin-bottom:11px;background:#fff}
+  .func-gate.now{box-shadow:0 8px 22px -12px var(--gc);background:linear-gradient(100deg,color-mix(in srgb,var(--gc) 7%,#fff),#fff)}
+  .func-gate-h{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-family:"Poppins";font-size:13.5px}
+  .func-gate-h .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .func-row{display:grid;grid-template-columns:190px 1fr;gap:4px 14px;padding:8px 0;border-top:1px dashed var(--line)}
+  .func-row.sub{padding-left:14px;border-left:2px solid #eef2f6;margin-left:2px}
+  .func-etapa{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--brand)}
+  .func-papel{font-weight:700;font-size:13px}
+  .func-desc{grid-column:2;font-size:12.5px;color:var(--ink-soft);line-height:1.55}
+
+  .quest-empty{text-align:center;padding:26px 20px;border:2px dashed var(--line);border-radius:16px;background:var(--surface-2)}
+  .quest-empty-ic{width:52px;height:52px;border-radius:14px;background:var(--brand-soft);display:grid;place-items:center;margin:0 auto 12px}
+  .quest-empty-ic svg{width:26px;height:26px}
+  .quest-empty h4{font-family:"Poppins";font-size:15px;font-weight:700}
+  .quest-empty p{font-size:12.5px;color:var(--ink-soft);margin-top:4px}
+  .quest-skel{margin-top:16px;text-align:left;opacity:.55}
+  .skel-q{border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px;background:#fff;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .skel-t{height:11px;border-radius:6px;background:linear-gradient(90deg,#e6edf4,#f2f6fa,#e6edf4);flex:1;max-width:60%}
+  .skel-o{display:flex;gap:6px;flex:none}
+  .skel-o span{width:44px;height:22px;border-radius:8px;background:#eef2f6}
+
   .navToggle{display:none;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 9px;cursor:pointer}
   @media(max-width:980px){
     .app{grid-template-columns:1fr}
@@ -398,6 +439,8 @@ const PEOPLE = [
   {id:'marta',   nome:'Marta Nogueira',    email:'marta.nogueira@empresa.com',   area:'Treinamento',   papel:'Solicitante',          site:'Pouso Alegre'},
   {id:'eduardo', nome:'Eduardo Pontes',    email:'eduardo.pontes@empresa.com',   area:'Operações',     papel:'Aprovador',            site:'Pouso Alegre'},
   {id:'silvia',  nome:'Silvia Rocha',      email:'silvia.rocha@empresa.com',     area:'Qualidade',     papel:'Aprovador',            site:'Garanhuns'},
+  {id:'roberto', nome:'Roberto Alves',     email:'roberto.alves@empresa.com',    area:'Direção de Site',papel:'Aprovador',           site:'Pouso Alegre'},
+  {id:'paulo',   nome:'Paulo Freitas',     email:'paulo.freitas@empresa.com',    area:'Projetos',      papel:'Aprovador',            site:'Pouso Alegre'},
   {id:'tamires', nome:'Tamires Cavani',    email:'tamires.cavani@drivedata.com', area:'Drive Data',    papel:'Visualizador',         site:'—'},
 ];
 const pName = id => (PEOPLE.find(p=>p.id===id)||{nome:id}).nome;
@@ -481,12 +524,20 @@ let SLAS = [
   {etapa:'Lembrete automático antes do vencimento',       dias:2,   tipo:'Ambos'},
 ];
 
-/* ---------------- aprovadores padrão (configurável) ---------------- */
+/* ---------------- aprovadores padrão (configurável) ----------------
+   Alinhado ao novo modelo de gates do global Unilever (slide "Resumo das
+   funções em cada etapa"). MOC simples = 3 gates de aprovação;
+   complexo = 5 (inclui Análise por Revisor e o PSSR Approver).
+--------------------------------------------------------------------- */
+const PAPEIS_SIMPLES  = ['Pré-aprovação — Proprietário da Área','Aprovação de Implementação — Aprovador','Encerramento — Diretor de Site / Líder'];
+const PAPEIS_COMPLEXO = ['Pré-aprovação — Proprietário da Área','Análise — Revisor SHE / Qualidade','Aprovação de Implementação — Aprovador','PSSR — PSSR Approver','Encerramento — Diretor de Site / Líder'];
 let CFG_APROV = [
-  {tipo:'Permanente', complexidade:'Simples',  papeis:['Aprovador para inicialização','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['eduardo','carlos','vania']},
-  {tipo:'Permanente', complexidade:'Complexo', papeis:['Aprovador para inicialização','Aprovador de Qualidade','Aprovador de SHE','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['eduardo','ana','vania','carlos','flavio']},
-  {tipo:'Temporário', complexidade:'Simples',  papeis:['Aprovador para inicialização','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['carlos','eduardo','vania']},
-  {tipo:'Temporário', complexidade:'Complexo', papeis:['Aprovador para inicialização','Aprovador de Qualidade','Aprovador de SHE','Aprovador para transferência (handover)','Aprovador para encerramento'], pessoas:['carlos','ana','vania','eduardo','flavio']},
+  {tipo:'Permanente',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES,  pessoas:['carlos','eduardo','roberto']},
+  {tipo:'Permanente',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO, pessoas:['carlos','ana','eduardo','vania','roberto']},
+  {tipo:'Temporário',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES,  pessoas:['carlos','eduardo','roberto']},
+  {tipo:'Temporário',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO, pessoas:['carlos','ana','eduardo','vania','roberto']},
+  {tipo:'Emergencial', complexidade:'Simples',  papeis:['Ratificação — Proprietário da Área','Aprovação retroativa — Aprovador','Encerramento — Diretor de Site / Líder'], pessoas:['carlos','eduardo','roberto']},
+  {tipo:'Emergencial', complexidade:'Complexo', papeis:['Ratificação — Proprietário da Área','Análise retroativa — Revisor SHE / Qualidade','Aprovação retroativa — Aprovador','PSSR — PSSR Approver','Encerramento — Diretor de Site / Líder'], pessoas:['carlos','ana','eduardo','vania','roberto']},
 ];
 const cfgFor = (tipo,complexo) => CFG_APROV.find(c=>c.tipo===tipo && c.complexidade===(complexo?'Complexo':'Simples')) || CFG_APROV[0];
 
@@ -500,16 +551,66 @@ const diffDias = (a,b) => Math.round((s2d(b)-s2d(a))/86400000);
 const HOJE_S = d2s(HOJE);
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-/* ---------------- status ---------------- */
+/* ---------------- ciclo de vida — modelo de GATES (novo padrão Unilever) ----------------
+   Fluxo de 6 etapas do slide do cliente:
+   Iniciado → Pré-aprovação → Análise → Aprovar → Implementação → Captura e Encerramento
+--------------------------------------------------------------------------------------- */
+const GATES = [
+  {id:'iniciado',      lb:'Iniciado',               curto:'Iniciado',    cor:'#2f9e44'},
+  {id:'preaprov',      lb:'Pré-aprovação',          curto:'Pré-aprov.',  cor:'#1a83d4'},
+  {id:'analise',       lb:'Análise',                curto:'Análise',     cor:'#003E73'},
+  {id:'aprovar',       lb:'Aprovar',                curto:'Aprovar',     cor:'#d9480f'},
+  {id:'implementacao', lb:'Implementação',          curto:'Implement.',  cor:'#7048e8'},
+  {id:'encerramento',  lb:'Captura e Encerramento', curto:'Encerram.',   cor:'#1b4332'},
+];
+const gateIdx = id => GATES.findIndex(g=>g.id===id);
+
+/* ---------------- status (mapeado ao gate correspondente) ---------------- */
 const STATUS = {
-  rascunho:  {lb:'Rascunho',              cls:'neutral', etapa:1},
-  conceito:  {lb:'Aprovação de conceito', cls:'info',    etapa:2},
-  aprovado:  {lb:'Aprovado',              cls:'ok',      etapa:3},
-  execucao:  {lb:'Em execução',           cls:'warn',    etapa:4},
-  concluido: {lb:'Concluído',             cls:'ok',      etapa:5},
-  rejeitado: {lb:'Rejeitado',             cls:'danger',  etapa:0},
+  rascunho:  {lb:'Iniciado',                 cls:'neutral', etapa:1, gate:'iniciado'},
+  conceito:  {lb:'Em análise',               cls:'info',    etapa:2, gate:'analise'},
+  aprovado:  {lb:'Aprovado p/ implementação',cls:'ok',      etapa:3, gate:'aprovar'},
+  execucao:  {lb:'Em implementação',         cls:'warn',    etapa:4, gate:'implementacao'},
+  concluido: {lb:'Encerrado',                cls:'ok',      etapa:5, gate:'encerramento'},
+  rejeitado: {lb:'Rejeitado',                cls:'danger',  etapa:0, gate:null},
 };
-const CICLO = ['Rascunho','Aprovação de conceito','Aprovado','Em execução','Concluído'];
+const gateDeMoc = m => (STATUS[m.status]||{}).gate;
+const CICLO = GATES.map(g=>g.lb);
+
+/* ---------------- tipos de MOC (agora com Emergencial) ---------------- */
+const TIPOS = ['Permanente','Temporário','Emergencial'];
+const TIPO_META = {
+  'Permanente':  {desc:'Alteração definitiva na operação — o novo estado passa a ser o padrão.', emerg:false,
+                  icon:'M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z'},
+  'Temporário':  {desc:'Alteração com prazo determinado — a operação retorna ao estado original ao fim da janela.', emerg:false,
+                  icon:'M12 6v6l4 2', circle:true},
+  'Emergencial': {desc:'Mudança já realizada sem MOC, por urgência. É registrada e formalizada em seguida — fluxo retroativo de ratificação e análise.', emerg:true,
+                  icon:'M13 2L3 14h7l-1 8 10-12h-7l1-8z'},
+};
+const isEmerg = t => (TIPO_META[t]||{}).emerg;
+
+/* ---------------- funções por etapa (slide "Resumo das funções em cada etapa") ---------------- */
+const ETAPA_FUNCOES = [
+  {gate:'iniciado',      etapa:'Iniciado (Draft)',           papel:'Iniciador',                                        desc:'Elabora a solicitação de mudança no SHENET, com avaliação de risco, avaliação de impacto, documentação e justificativa.'},
+  {gate:'preaprov',      etapa:'Pré-aprovação',              papel:'Coordenador do MOC & Proprietário da Área',        desc:'O Coordenador avalia para verificar a completude; o Proprietário da Área pré-aprova a submissão (ex.: recursos, Capex).'},
+  {gate:'analise',       etapa:'Revisão e Avaliação',        papel:'Revisor(es)',                                      desc:'Avalia impactos e riscos de SHE; PSCP, PME e Autoridade Técnica são consultadas e envolvidas.'},
+  {gate:'aprovar',       etapa:'Aprovação de Implementação', papel:'Aprovador (Proprietário da Área / Líder do Projeto)',desc:'Aprova a mudança para implementação.'},
+  {gate:'implementacao', etapa:'Análise Pré-Startup',        papel:'Coordenador e Iniciador do MOC',                   desc:'Realiza a Revisão Pré-Inicialização e garante a conclusão do PSSR.', sub:true},
+  {gate:'implementacao', etapa:'PSSR & Startup',             papel:'PSSR Approver (Proprietário da Área / Líder de Projeto)',desc:'Aprova o PSSR e autoriza a Inicialização.', sub:true},
+  {gate:'implementacao', etapa:'Handover',                   papel:'Proprietário da Área / Líder do Projeto',          desc:'Aceita o Handover, verifica a instalação e garante o encerramento de todas as ações.', sub:true},
+  {gate:'implementacao', etapa:'Documentação',               papel:'Coordenador do MOC',                               desc:'Garante a completude da documentação para a Aprovação da Documentação.', sub:true},
+  {gate:'implementacao', etapa:'Análise Pós-Startup',        papel:'Proprietário da Área / Líder do Projeto',          desc:'Garante que os objetivos sejam alcançados após o Startup Review e sem riscos adicionais.', sub:true},
+  {gate:'encerramento',  etapa:'Encerramento',               papel:'Diretor de Site / Líder de Projeto',               desc:'Realiza a Revisão Final e o Encerramento como Aprovador para Encerramento.'},
+];
+
+/* ---------------- questionários adicionais (perguntas a definir pela área — placeholder) ----------------
+   Além da Avaliação de Impacto, o novo padrão prevê:
+   • Análise de Pré-Iniciação — em TODOS os MOCs (antes de iniciar a execução)
+   • PSSR (Pre-Startup Safety Review) — apenas quando COMPLEXO
+--------------------------------------------------------------------------------------------------------- */
+const QUEST_PRE  = [];  // Análise de Pré-Iniciação — aguardando lista de perguntas da área (SHE)
+const QUEST_PSSR = [];  // PSSR — aguardando lista de perguntas da área (SHE)
+const QUEST_NOTE = 'As perguntas definitivas deste questionário serão fornecidas pela área de SHE. A estrutura já está pronta para recebê-las como cadastro, sem necessidade de novo desenvolvimento.';
 const ACST = {
   aberta:    {lb:'Aberta',      cls:'neutral'},
   andamento: {lb:'Em progresso',cls:'info'},
@@ -1006,7 +1107,7 @@ function feedRecente(){
 
 function drawHome(){
   const host = el('homeCiclo'); if(!host) return;
-  const cont = CICLO.map(c=>({lb:c, n:MOCS.filter(m=>(STATUS[m.status]||{}).lb===c).length}));
+  const cont = GATES.map(g=>({lb:g.lb, n:MOCS.filter(m=>gateDeMoc(m)===g.id).length}));
   const max = Math.max(1, ...cont.map(c=>c.n));
   host.innerHTML = cont.map(c=>
     '<div style="margin-bottom:11px">'+
@@ -1085,17 +1186,22 @@ function vMOC(){
   if(!m) return '<div class="card pad">MOC não encontrado.</div>';
   const st = STATUS[m.status];
   const ab = acoesAbertas(m).length;
+  const tipoAdj = m.tipo==='Permanente'?'permanente':m.tipo==='Temporário'?'temporária':'emergencial';
   const tabs = [
-    ['inicio','Início'], ['impacto','Avaliação de impacto'], ['aprov','Aprovações'],
-    ['acoes','Itens de ação'], ['anexos','Anexos'], ['emails','Notificações de E-mail'], ['trilha','Trilha da Auditoria'],
+    ['inicio','Início'], ['impacto','Avaliação de impacto'], ['preinit','Análise de Pré-Iniciação'],
   ];
+  if(m.complexo) tabs.push(['pssr','PSSR']);
+  tabs.push(['aprov','Aprovações'], ['funcoes','Funções por etapa'],
+    ['acoes','Itens de ação'], ['anexos','Anexos'], ['emails','Notificações de E-mail'], ['trilha','Trilha da Auditoria']);
+  if(MOCTAB==='pssr' && !m.complexo) MOCTAB='inicio';
   const cnt = {acoes:m.acoes.length, anexos:m.anexos.length, aprov:m.aprovacoes.length, emails:emailsDe(m.id).length};
-  const pane = {inicio:paneInicio, impacto:paneImpacto, aprov:paneAprov, acoes:paneAcoes, anexos:paneAnexos, emails:paneEmails, trilha:paneTrilha}[MOCTAB](m);
+  const pane = {inicio:paneInicio, impacto:paneImpacto, preinit:panePreInit, pssr:panePSSR, aprov:paneAprov,
+                funcoes:paneFuncoes, acoes:paneAcoes, anexos:paneAnexos, emails:paneEmails, trilha:paneTrilha}[MOCTAB](m);
 
   return '<div style="margin-bottom:14px"><button class="btn ghost sm" onclick="switchView(\'meus\')">← Voltar para a lista</button></div>'+
   '<div class="card" style="overflow:visible">'+
     '<div class="moc-hd">'+
-      '<div><div class="t">Alteração '+(m.tipo==='Permanente'?'permanente':'temporária')+' <span class="st">('+st.lb.toUpperCase()+')</span></div>'+
+      '<div><div class="t">Alteração '+tipoAdj+' <span class="st">('+st.lb.toUpperCase()+')</span></div>'+
       '<div style="font-size:12.5px;opacity:.92;margin-top:2px">'+esc(m.titulo)+'</div></div>'+
       '<div class="spacer"></div>'+
       (m.status==='rascunho' ? '<button class="btn perm-w" style="background:#fff;color:var(--brand)" onclick="submeter(\''+m.id+'\')">Enviar para Aprov.</button>' : '')+
@@ -1104,6 +1210,7 @@ function vMOC(){
         '<button class="btn danger perm-w" onclick="decidir(\''+m.id+'\',\'rejeitado\')">Rejeitar</button>' : '')+
       (m.status==='execucao' ? '<button class="btn perm-w" style="background:#fff;color:var(--brand)" onclick="encerrar(\''+m.id+'\')">Encerrar MOC</button>' : '')+
     '</div>'+
+    gateStepper(m)+
     '<div class="moc-body">'+
       '<div class="moc-nav">'+
         '<div class="id">'+m.id+'</div>'+
@@ -1257,6 +1364,73 @@ function paneTrilha(m){
     '<div class="tl">'+ev.sort((a,b)=>a.d.localeCompare(b.d)).map(e=>
       '<div class="tl-i '+e.cls+'"><div class="w">'+esc(e.w)+'</div><div class="d">'+fmt(e.d)+'</div><div class="m">'+esc(e.m)+'</div></div>'
     ).join('')+'</div>';
+}
+
+/* ============================================================
+   NOVO MODELO — stepper de gates, funções por etapa,
+   questionários Pré-Iniciação e PSSR (padrão global Unilever)
+   ============================================================ */
+function gateStepper(m){
+  const atual = gateDeMoc(m);
+  const idxAtual = atual ? gateIdx(atual) : -1;
+  const rej = m.status==='rejeitado';
+  return '<div class="gate-flow">'+
+    GATES.map((g,i)=>{
+      let cls = 'gate';
+      if(rej) cls += i<=idxAtual ? ' done' : '';
+      else if(i<idxAtual) cls += ' done';
+      else if(i===idxAtual) cls += ' on';
+      return '<div class="'+cls+'" style="--gc:'+g.cor+'" title="'+esc(g.lb)+'">'+
+        '<span class="gn">'+(i+1)+'</span><span class="gl">'+esc(g.lb)+'</span></div>';
+    }).join('')+
+    (rej ? '<div class="gate rej on"><span class="gn">✕</span><span class="gl">Rejeitado</span></div>' : '')+
+  '</div>';
+}
+
+function paneFuncoes(m){
+  const atual = gateDeMoc(m);
+  const grupos = [];
+  ETAPA_FUNCOES.forEach(f=>{
+    let g = grupos.find(x=>x.gate===f.gate);
+    if(!g){ g={gate:f.gate, itens:[]}; grupos.push(g); }
+    g.itens.push(f);
+  });
+  return '<div class="sec-h">Resumo das funções em cada etapa</div>'+
+    '<div class="note">Funções distintas governam o fluxo de mudança — uma responsabilidade clara em cada portão (gate) evita lacunas e garante supervisão adequada do início ao fechamento. Modelo alinhado ao novo padrão global.</div>'+
+    grupos.map(g=>{
+      const G = GATES[gateIdx(g.gate)];
+      const isNow = g.gate===atual;
+      return '<div class="func-gate'+(isNow?' now':'')+'" style="--gc:'+(G?G.cor:'#888')+'">'+
+        '<div class="func-gate-h"><span class="dot" style="background:'+(G?G.cor:'#888')+'"></span>'+
+          '<b>'+(gateIdx(g.gate)+1)+'. '+esc(G?G.lb:g.gate)+'</b>'+(isNow?'<span class="pill info">etapa atual</span>':'')+'</div>'+
+        g.itens.map(f=>'<div class="func-row'+(f.sub?' sub':'')+'">'+
+          '<div class="func-etapa">'+esc(f.etapa)+'</div>'+
+          '<div class="func-papel">'+esc(f.papel)+'</div>'+
+          '<div class="func-desc">'+esc(f.desc)+'</div></div>').join('')+
+      '</div>';
+    }).join('');
+}
+
+/* renderiza um questionário placeholder (perguntas ainda a definir pela área) */
+function questPlaceholder(titulo, quando, questoes){
+  if(questoes && questoes.length) return ''; // (quando houver perguntas cadastradas, renderiza aqui)
+  return '<div class="quest-empty">'+
+    '<div class="quest-empty-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#0060A8" stroke-width="1.6"><path d="M9.1 9a3 3 0 015.8 1c0 2-3 3-3 3M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg></div>'+
+    '<h4>'+esc(titulo)+'</h4>'+
+    '<p>'+esc(quando)+'</p>'+
+    '<div class="note" style="text-align:left;margin-top:14px">'+esc(QUEST_NOTE)+'</div>'+
+    '<div class="quest-skel">'+[0,1,2,3].map(()=>'<div class="skel-q"><div class="skel-t"></div><div class="skel-o"><span></span><span></span></div></div>').join('')+'</div>'+
+  '</div>';
+}
+function panePreInit(m){
+  return '<div class="sec-h">Análise de Pré-Iniciação</div>'+
+    '<div class="note"><b>Novo questionário — aplicado a todos os MOCs.</b> Realizado antes de iniciar a execução (etapa de Implementação → Análise Pré-Startup), garante que tudo está pronto para a partida com segurança.</div>'+
+    questPlaceholder('Perguntas da Pré-Iniciação — a definir', 'Aplicável a todos os MOCs (Permanente, Temporário e Emergencial).', QUEST_PRE);
+}
+function panePSSR(m){
+  return '<div class="sec-h">PSSR — Pre-Startup Safety Review</div>'+
+    '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft)"><b>Novo questionário — apenas para MOC complexo.</b> Revisão de segurança pré-partida; sua aprovação (PSSR Approver) autoriza a inicialização.</div>'+
+    questPlaceholder('Perguntas do PSSR — a definir', 'Aplicável apenas a MOCs classificados como Complexo.', QUEST_PSSR);
 }
 
 
@@ -1480,14 +1654,16 @@ function vWizard(){
 
 function wzTipo(){
   return '<div class="panel-head"><div><div class="section-title">Etapa 1 · Selecione o tipo de MOC</div>'+
-    '<div class="muted">A escolha define a régua de aprovadores padrão aplicada ao final do fluxo.</div></div></div>'+
-    '<div class="type-cards">'+
-      [['Permanente','Alteração definitiva na operação — o novo estado passa a ser o padrão. Exige aprovação de encerramento e atualização da documentação oficial.','M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z'],
-       ['Temporário','Alteração com prazo determinado — a operação retorna ao estado original ao fim da janela. Exige data de reversão e acompanhamento do prazo.','M12 6v6l4 2']].map(t=>
-        '<div class="type-card'+(WIZ.tipo===t[0]?' sel':'')+'" onclick="WIZ.tipo=\''+t[0]+'\';render()">'+
-          '<div class="ic"><svg viewBox="0 0 24 24">'+(t[0]==='Temporário'?'<circle cx="12" cy="12" r="10"/>':'')+'<path d="'+t[2]+'"/></svg></div>'+
-          '<h4>MOC '+t[0]+'</h4><p>'+t[1]+'</p></div>').join('')+
-    '</div>';
+    '<div class="muted">A escolha define a régua de aprovadores padrão e o fluxo de etapas aplicado.</div></div></div>'+
+    '<div class="type-cards type-3">'+
+      TIPOS.map(t=>{ const m=TIPO_META[t];
+        return '<div class="type-card'+(WIZ.tipo===t?' sel':'')+(m.emerg?' emerg':'')+'" onclick="WIZ.tipo=\''+t+'\';render()">'+
+          '<div class="ic"><svg viewBox="0 0 24 24">'+(m.circle?'<circle cx="12" cy="12" r="10"/>':'')+'<path d="'+m.icon+'"/></svg></div>'+
+          '<h4>MOC '+t+'</h4><p>'+m.desc+'</p>'+
+          (m.emerg?'<div class="emerg-tag">Fluxo retroativo — a mudança já ocorreu</div>':'')+'</div>';
+      }).join('')+
+    '</div>'+
+    (isEmerg(WIZ.tipo) ? '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft);margin-top:14px"><b>MOC Emergencial:</b> use apenas quando a mudança já foi executada por urgência, sem MOC prévio. O sistema registra o ocorrido e conduz a ratificação, a análise e a aprovação de forma retroativa, preservando a rastreabilidade para auditoria.</div>' : '');
 }
 
 function wzInfo(){
@@ -1929,7 +2105,7 @@ function drawPainel(){
   '</div>';
 
   /* Seção 3 — ciclo de vida */
-  const funil = CICLO.map(c=>({lb:c, v:u.filter(m=>(STATUS[m.status]||{}).lb===c).length}));
+  const funil = GATES.map(g=>({lb:g.lb, v:u.filter(m=>gateDeMoc(m)===g.id).length}));
 
   /* Seção 4 — geográfica */
   const geo = [];
@@ -2240,7 +2416,8 @@ const TOUR = [
   {v:'home', sel:'.stat-grid', t:'Início', p:'Cada perfil abre o sistema vendo o que precisa fazer: MOCs em andamento, o que aguarda a sua aprovação, o que está em atraso e as ações sob sua responsabilidade.'},
   {v:'home', sel:'#roleSel', t:'Troque de perfil a qualquer momento', p:'Admin Master (Vânia), Solicitante, Aprovador e Visualizador. No perfil Visualizador — o acesso pedido para a Tamires — todos os botões de escrita somem.'},
   {v:'novo', sel:'.steps', t:'Módulo 1 · Criação em 6 etapas', p:'O fluxo espelha o que a Vânia mostrou: tipo de MOC, informações iniciais, avaliação de impacto, ações, aprovadores e revisão.'},
-  {v:'novo', sel:'.type-cards', t:'Etapa 1 · Permanente ou Temporário', p:'Os dois tipos que existem hoje. O tipo define a régua de aprovadores aplicada no fim do fluxo.'},
+  {v:'novo', sel:'.type-cards', t:'Etapa 1 · Três tipos de MOC', p:'Permanente, Temporário e o novo Emergencial (mudança já feita sem MOC, formalizada depois). O tipo define a régua de aprovadores e o fluxo de etapas.'},
+  {v:'moc', tab:'funcoes', sel:'.func-gate', t:'Ciclo de 6 etapas com papéis', p:'O novo padrão global: cada portão (gate) — de Iniciado a Captura e Encerramento — tem um papel responsável. Uma responsabilidade clara em cada etapa evita lacunas.'},
   {v:'moc', tab:'impacto', sel:'.qual-note', t:'O bloco de Qualidade', p:'Aqui está o motivo do projeto: o sistema global removeu as perguntas de qualidade e a unidade precisa delas por causa das auditorias. Neste sistema elas são obrigatórias e cadastráveis.'},
   {v:'moc', tab:'impacto', sel:'.dim', t:'Cada "Sim" vira uma ação', p:'Responder "Sim" gera automaticamente um item de ação com responsável e prazo — como o exemplo da caçamba citado na reunião. A quantidade e a criticidade das respostas classificam o MOC como simples ou complexo.'},
   {v:'moc', tab:'aprov', sel:'.tl', t:'Aprovação em níveis', p:'MOC simples: 3 aprovadores. Complexo: 5, incluindo Qualidade e SHE. Cada nível tem prazo próprio e o MOC não avança sem a aprovação anterior.'},
@@ -2340,7 +2517,7 @@ function vEscopo(){
   '<div class="card pad" style="margin-bottom:16px">'+
     '<div class="section-title" style="margin-bottom:12px">Jornada do MOC — do pedido ao encerramento</div>'+
     '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Etapa</th><th>Quem faz</th><th>O que o sistema faz</th><th>Regra</th></tr></thead><tbody>'+
-    [['1','Adicionar novo MOC','Solicitante','Abre o fluxo e registra o tipo','Permanente ou Temporário'],
+    [['1','Adicionar novo MOC','Solicitante','Abre o fluxo e registra o tipo','Permanente, Temporário ou Emergencial'],
      ['2','Informações iniciais','Solicitante','Valida campos e a janela do MOC','Janela não pode exceder o SLA de 90 dias'],
      ['3','Avaliação de impacto','Solicitante','<b>Gera as ações automaticamente</b> e classifica a complexidade','Cada "Sim" = 1 ação; "Sim" crítico = MOC complexo'],
      ['4','Gestão de ações','Solicitante / responsáveis','Atribui responsável e prazo a cada ação','Ação aberta impede o encerramento'],
