@@ -294,6 +294,34 @@
   .func-papel{font-weight:700;font-size:13px}
   .func-desc{grid-column:2;font-size:12.5px;color:var(--ink-soft);line-height:1.55}
 
+  .quest-quando{display:flex;align-items:center;gap:9px;margin:0 0 14px;padding:9px 13px;border:1px solid var(--line);border-left:4px solid var(--brand-2);border-radius:10px;background:#fff;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .qq-tag{font-size:9.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#fff;background:var(--brand-2);padding:3px 8px;border-radius:6px;flex:none}
+
+  /* ---------- revisão out/2026: triagem, não se aplica, acompanhamento ---------- */
+  .q-opt.on-na{background:#eef1f4;border-color:#8796a5;color:var(--ink)}
+  .q.na{background:var(--surface-2)}
+  .q.na .q-txt{color:var(--ink-soft)}
+  .ans-key{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);margin:0 0 14px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .ans-key b{color:var(--ink)}
+  .tri-q{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;background:#fff}
+  .tri-q.sim{border-left-color:var(--ok)}
+  .tri-q.nao{border-left-color:var(--danger)}
+  .tri-q .q-opt.on-yes{background:var(--ok);border-color:var(--ok)}
+  .tri-q .q-opt.on-no{background:var(--danger);border-color:var(--danger)}
+  .tri-n{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;color:var(--brand);margin-right:6px}
+  .tri-hint{font-size:11.5px;color:var(--ink-faint);margin-top:7px}
+  .tri-res{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-top:14px;background:var(--surface-2)}
+  .tri-res h4{font-family:"Poppins";font-size:15px;font-weight:700;margin-bottom:6px}
+  .tri-res.cx{border-left:4px solid var(--danger)}
+  .tri-res.sp{border-left:4px solid var(--ok)}
+  .rules{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:14px 18px;background:#fff}
+  .rules h5{font-family:"Poppins";font-size:13.5px;font-weight:700;margin-bottom:4px}
+  .now-bar{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;padding:11px 20px;border-bottom:1px solid var(--line);background:#fff;font-size:12.5px}
+  .now-bar .k{font-size:11px;font-weight:700;color:var(--ink-faint)}
+  .now-bar .sep{width:1px;height:18px;background:var(--line)}
+  .chk-row{display:flex;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:13px;font-weight:600;cursor:pointer;background:#fff}
+  .chk-row input{width:17px;height:17px;flex:none}
+  @media(max-width:640px){ .q-top{flex-direction:column} .q-opts{flex-wrap:wrap} }
   .quest-empty{text-align:center;padding:26px 20px;border:2px dashed var(--line);border-radius:16px;background:var(--surface-2)}
   .quest-empty-ic{width:52px;height:52px;border-radius:14px;background:var(--brand-soft);display:grid;place-items:center;margin:0 auto 12px}
   .quest-empty-ic svg{width:26px;height:26px}
@@ -497,47 +525,83 @@ let QUESTOES = [
 const qById = id => QUESTOES.find(q=>q.id===id);
 const dimById = id => DIMS.find(d=>d.id===id) || {nome:id,cor:'#888'};
 
-/* ---------------- regra de complexidade ----------------
-   Simples  -> 3 aprovadores
-   Complexo -> 5 aprovadores (inclui Qualidade e SHE obrigatórios)
---------------------------------------------------------- */
-let REGRA = {simplesAprov:3, complexoAprov:5, gatilhoSins:4};
-function calcComplexidade(av){
-  const sins = Object.keys(av||{}).filter(k=>av[k] && av[k].r==='sim');
-  const criticas = sins.filter(k=>(qById(k)||{}).critica).length;
-  const qualidade = sins.filter(k=>(qById(k)||{}).dim==='qual').length;
-  const complexo = sins.length >= REGRA.gatilhoSins || criticas > 0;
-  return {complexo, sins:sins.length, criticas, qualidade,
-          motivo: criticas>0 ? 'Resposta "Sim" em '+criticas+' questão(ões) crítica(s)' :
-                  sins.length>=REGRA.gatilhoSins ? sins.length+' impactos identificados (gatilho: '+REGRA.gatilhoSins+')' :
-                  'Nenhum impacto crítico identificado'};
+/* ---------------- triagem Simples × Complexo ----------------
+   Fonte: documento da área de SHE "2. MOC Simples ou Complexo?" (out/2026).
+   Três perguntas em sequência: "Sim" avança, qualquer "Não" classifica como
+   COMPLEXO. Três "Sim" mantêm o MOC SIMPLES.
+   Simples  -> mínimo de 1 revisor · avaliação de impacto obrigatória
+   Complexo -> mínimo de 2 revisores · checklist de PSSR / revisão pós-inicialização
+--------------------------------------------------------------- */
+const TRIAGEM = [
+  {id:'t1', txt:'A mudança mantém os controles atuais de Segurança, Saúde, Meio Ambiente, Qualidade e Segurança de Processo, sem necessidade de criar ou alterar controles críticos?'},
+  {id:'t2', txt:'A mudança mantém as condições críticas atuais do processo, sem alterar parâmetros operacionais, alarmes, trips, intertravamentos, proteções, tecnologia, substâncias ou condições de segurança de equipamentos/instalações?'},
+  {id:'t3', txt:'Todos os riscos e impactos da mudança são conhecidos, compreendidos e podem ser controlados sem necessidade de uma avaliação técnica multidisciplinar aprofundada?'},
+];
+let REGRA = {minRevSimples:1, minRevComplexo:2};
+const minRev = complexo => complexo ? REGRA.minRevComplexo : REGRA.minRevSimples;
+function classificar(tri){
+  tri = tri||{};
+  for(let i=0;i<TRIAGEM.length;i++){
+    const r = tri[TRIAGEM[i].id];
+    if(r==='nao') return {definido:true, complexo:true, falhou:i, motivo:'"Não" na pergunta '+(i+1)+' da triagem'};
+    if(r!=='sim') return {definido:false, complexo:false, pendente:i, motivo:'Triagem não concluída'};
+  }
+  return {definido:true, complexo:false, motivo:'"Sim" nas três perguntas da triagem'};
+}
+/* resumo da avaliação de impacto (não define mais a complexidade) */
+function resumoImpacto(av){
+  const ks = Object.keys(av||{});
+  const sins = ks.filter(k=>av[k] && av[k].r==='sim');
+  return {sins:sins.length,
+          na: ks.filter(k=>av[k] && av[k].r==='na').length,
+          criticas: sins.filter(k=>(qById(k)||{}).critica).length,
+          qualidade: sins.filter(k=>(qById(k)||{}).dim==='qual').length};
 }
 
-/* ---------------- SLAs (configuráveis) ---------------- */
+/* ---------------- SLAs e prazos (configuráveis) ----------------
+   Fonte dos prazos por tipo: documento "1. Escolha do tipo de MOC" (out/2026)
+   e call de 21/10/2026 ("o MOC tem validade de 180 dias para implementação").
+------------------------------------------------------------------ */
 let SLAS = [
-  {etapa:'Preenchimento inicial (rascunho → submissão)', dias:10,  tipo:'Ambos'},
-  {etapa:'Avaliação de impacto',                          dias:5,   tipo:'Ambos'},
+  {etapa:'Preenchimento inicial (rascunho → submissão)', dias:10,  tipo:'Todos'},
+  {etapa:'Avaliação de impacto',                          dias:5,   tipo:'Todos'},
   {etapa:'Aprovação por aprovador (MOC simples)',         dias:5,   tipo:'Simples'},
   {etapa:'Aprovação por aprovador (MOC complexo)',        dias:7,   tipo:'Complexo'},
-  {etapa:'Conclusão de item de ação',                     dias:30,  tipo:'Ambos'},
-  {etapa:'Janela total do MOC (início → encerramento)',   dias:90,  tipo:'Ambos'},
-  {etapa:'Lembrete automático antes do vencimento',       dias:2,   tipo:'Ambos'},
+  {etapa:'Conclusão de item de ação',                     dias:30,  tipo:'Todos'},
+  {etapa:'Período inicial do MOC Temporário',             dias:90,  tipo:'Temporário'},
+  {etapa:'Limite máximo com reavaliação',                 dias:180, tipo:'Permanente e Temporário'},
+  {etapa:'Formalização do MOC Emergencial',               dias:1,   tipo:'Emergencial', util:true},
+  {etapa:'Lembrete automático antes do vencimento',       dias:2,   tipo:'Todos'},
 ];
+const slaDias = (prefixo, def) => (SLAS.find(s=>s.etapa.indexOf(prefixo)===0)||{dias:def}).dias;
+const limMax  = () => slaDias('Limite máximo', 180);
+const limTemp = () => slaDias('Período inicial', 90);
+const limiteInicial = tipo => tipo==='Temporário' ? limTemp() : limMax();
 
-/* ---------------- aprovadores padrão (configurável) ----------------
-   Alinhado ao novo modelo de gates do global Unilever (slide "Resumo das
-   funções em cada etapa"). MOC simples = 3 gates de aprovação;
-   complexo = 5 (inclui Análise por Revisor e o PSSR Approver).
---------------------------------------------------------------------- */
-const PAPEIS_SIMPLES  = ['Pré-aprovação — Proprietário da Área','Aprovação de Implementação — Aprovador','Encerramento — Diretor de Site / Líder'];
-const PAPEIS_COMPLEXO = ['Pré-aprovação — Proprietário da Área','Análise — Revisor SHE / Qualidade','Aprovação de Implementação — Aprovador','PSSR — PSSR Approver','Encerramento — Diretor de Site / Líder'];
+/* ---------------- régua padrão (configurável) ----------------
+   Gates do novo padrão global (slide "Resumo das funções em cada etapa").
+   A etapa de Análise é dos Revisores: Simples = mínimo 1 · Complexo = mínimo 2,
+   mais o PSSR Approver. O Emergencial segue o fluxo do Permanente e exige,
+   além disso, a aprovação escrita do Site Lead (ou substituto).
+   Aprovador e PSSR Approver são o mesmo papel no slide (Proprietário da Área /
+   Líder do Projeto); por isso a régua padrão usa a mesma pessoa nos dois.
+--------------------------------------------------------------- */
+const P_PRE  = 'Pré-aprovação — Proprietário da Área';
+const P_REV  = 'Análise — Revisor';
+const P_APR  = 'Aprovação de Implementação — Aprovador';
+const P_PSSR = 'PSSR — PSSR Approver';
+const P_ENC  = 'Encerramento — Diretor de Site / Líder';
+const P_SITE = 'Aprovação escrita — Site Lead (ou substituto)';
+const isRevisor = p => p.indexOf(P_REV)===0;
+const PAPEIS_SIMPLES  = [P_PRE, P_REV+' 1', P_APR, P_ENC];
+const PAPEIS_COMPLEXO = [P_PRE, P_REV+' 1', P_REV+' 2', P_APR, P_PSSR, P_ENC];
 let CFG_APROV = [
-  {tipo:'Permanente',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES,  pessoas:['carlos','eduardo','roberto']},
-  {tipo:'Permanente',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO, pessoas:['carlos','ana','eduardo','vania','roberto']},
-  {tipo:'Temporário',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES,  pessoas:['carlos','eduardo','roberto']},
-  {tipo:'Temporário',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO, pessoas:['carlos','ana','eduardo','vania','roberto']},
-  {tipo:'Emergencial', complexidade:'Simples',  papeis:['Ratificação — Proprietário da Área','Aprovação retroativa — Aprovador','Encerramento — Diretor de Site / Líder'], pessoas:['carlos','eduardo','roberto']},
-  {tipo:'Emergencial', complexidade:'Complexo', papeis:['Ratificação — Proprietário da Área','Análise retroativa — Revisor SHE / Qualidade','Aprovação retroativa — Aprovador','PSSR — PSSR Approver','Encerramento — Diretor de Site / Líder'], pessoas:['carlos','ana','eduardo','vania','roberto']},
+  {tipo:'Permanente',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES.slice(),  pessoas:['carlos','ana','eduardo','roberto']},
+  {tipo:'Permanente',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO.slice(), pessoas:['carlos','ana','juliana','eduardo','eduardo','roberto']},
+  {tipo:'Temporário',  complexidade:'Simples',  papeis:PAPEIS_SIMPLES.slice(),  pessoas:['carlos','ana','eduardo','roberto']},
+  {tipo:'Temporário',  complexidade:'Complexo', papeis:PAPEIS_COMPLEXO.slice(), pessoas:['carlos','ana','juliana','eduardo','eduardo','roberto']},
+  {tipo:'Emergencial', complexidade:'Simples',  papeis:[P_SITE].concat(PAPEIS_SIMPLES),  pessoas:['roberto','carlos','ana','eduardo','roberto']},
+  {tipo:'Emergencial', complexidade:'Complexo', papeis:[P_SITE].concat(PAPEIS_COMPLEXO), pessoas:['roberto','carlos','ana','juliana','eduardo','eduardo','roberto']},
 ];
 const cfgFor = (tipo,complexo) => CFG_APROV.find(c=>c.tipo===tipo && c.complexidade===(complexo?'Complexo':'Simples')) || CFG_APROV[0];
 
@@ -548,6 +612,9 @@ const s2d = s => new Date(s+'T00:00:00');
 const fmt = s => { if(!s) return '—'; const p=s.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
 const addDias = (s,n) => { const d=s2d(s); d.setDate(d.getDate()+n); return d2s(d); };
 const diffDias = (a,b) => Math.round((s2d(b)-s2d(a))/86400000);
+function proximoDiaUtil(s){ const d=s2d(s); do{ d.setDate(d.getDate()+1); } while(d.getDay()===0||d.getDay()===6); return d2s(d); }
+/* Emergencial: formalização até N dia(s) útil(eis) após a implementação (feriados a confirmar) */
+function prazoFormalizacao(s){ let x=s; for(let i=0;i<slaDias('Formalização',1);i++) x=proximoDiaUtil(x); return x; }
 const HOJE_S = d2s(HOJE);
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
@@ -574,18 +641,41 @@ const STATUS = {
   concluido: {lb:'Encerrado',                cls:'ok',      etapa:5, gate:'encerramento'},
   rejeitado: {lb:'Rejeitado',                cls:'danger',  etapa:0, gate:null},
 };
-const gateDeMoc = m => (STATUS[m.status]||{}).gate;
+/* em aprovação, o gate atual é o do papel que está pendente */
+function gateDoPapel(p){
+  if(p.indexOf('Pré-aprovação')===0 || p.indexOf('Aprovação escrita')===0) return 'preaprov';
+  if(p.indexOf('Análise')===0) return 'analise';
+  if(p.indexOf('Aprovação de Implementação')===0) return 'aprovar';
+  if(p.indexOf('PSSR')===0) return 'implementacao';
+  if(p.indexOf('Encerramento')===0) return 'encerramento';
+  return 'analise';
+}
+const gateDeMoc = m => {
+  if(m.status==='conceito' && m.aprovacoes){ const p = m.aprovacoes.find(a=>a.status==='pendente'); if(p) return gateDoPapel(p.papel); }
+  return (STATUS[m.status]||{}).gate;
+};
 const CICLO = GATES.map(g=>g.lb);
 
-/* ---------------- tipos de MOC (agora com Emergencial) ---------------- */
+/* ---------------- tipos de MOC ----------------
+   Fonte: documento da área de SHE "1. Escolha do tipo de MOC" (out/2026).
+------------------------------------------------ */
 const TIPOS = ['Permanente','Temporário','Emergencial'];
 const TIPO_META = {
-  'Permanente':  {desc:'Alteração definitiva na operação — o novo estado passa a ser o padrão.', emerg:false,
-                  icon:'M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z'},
-  'Temporário':  {desc:'Alteração com prazo determinado — a operação retorna ao estado original ao fim da janela.', emerg:false,
-                  icon:'M12 6v6l4 2', circle:true},
-  'Emergencial': {desc:'Mudança já realizada sem MOC, por urgência. É registrada e formalizada em seguida — fluxo retroativo de ratificação e análise.', emerg:true,
-                  icon:'M13 2L3 14h7l-1 8 10-12h-7l1-8z'},
+  'Permanente':  {desc:'Alteração que permanecerá incorporada ao processo, equipamento, instalação ou condição de operação.', emerg:false,
+                  icon:'M12 2l8 4v6c0 5-3.4 9.2-8 10-4.6-.8-8-5-8-10V6l8-4z',
+                  regras:['Depois do tipo, a mudança é classificada como Simples ou Complexa.',
+                          'Prazo com reavaliação até o limite máximo de 180 dias.']},
+  'Temporário':  {desc:'Mudança implementada por período determinado.', emerg:false,
+                  icon:'M12 6v6l4 2', circle:true,
+                  regras:['Período inicial de até 90 dias.',
+                          'Reavaliação até o limite máximo de 180 dias.',
+                          'Ao final, a mudança é revertida à condição original ou convertida em permanente.']},
+  'Emergencial': {desc:'Mudança implementada sem MOC.', emerg:true,
+                  icon:'M13 2L3 14h7l-1 8 10-12h-7l1-8z',
+                  regras:['Segue o fluxo do MOC Permanente.',
+                          'Exige avaliação de risco adequada.',
+                          'Exige aprovação escrita do Site Lead ou substituto.',
+                          'O acompanhamento deve ser finalizado no próximo dia útil, para confirmação do processo correto.']},
 };
 const isEmerg = t => (TIPO_META[t]||{}).emerg;
 
@@ -605,8 +695,8 @@ const ETAPA_FUNCOES = [
 
 /* ---------------- questionários adicionais (perguntas a definir pela área — placeholder) ----------------
    Além da Avaliação de Impacto, o novo padrão prevê:
-   • Análise de Pré-Iniciação — em TODOS os MOCs (antes de iniciar a execução)
-   • PSSR (Pre-Startup Safety Review) — apenas quando COMPLEXO
+   • Análise de Pré-Iniciação — em TODOS os MOCs, após a inicialização
+   • PSSR / revisão pós-inicialização — apenas quando COMPLEXO, dentro da implementação
 --------------------------------------------------------------------------------------------------------- */
 const QUEST_PRE  = [];  // Análise de Pré-Iniciação — aguardando lista de perguntas da área (SHE)
 const QUEST_PSSR = [];  // PSSR — aguardando lista de perguntas da área (SHE)
@@ -643,9 +733,21 @@ function mkAcoes(mid, av, base){
             venc, status:st, necessarioInicio: !!q.critica, concluidaEm: st==='concluida'?addDias(venc,-3):null};
   });
 }
-function mkAprov(tipo, complexo, estados){
+function mkAprov(tipo, complexo, estados, pessoas){
   const cfg = cfgFor(tipo, complexo);
-  return cfg.papeis.map((papel,i)=>Object.assign({papel, pessoa:cfg.pessoas[i], status:'pendente'}, estados[i]||{}));
+  const quem = pessoas || cfg.pessoas;
+  // vitrine: se todos os níveis informados estão aprovados, a régua inteira está aprovada
+  const tudo = estados.length && estados.every(e=>e.status==='aprovado');
+  const ultimo = tudo ? estados[estados.length-1].em : null;
+  return cfg.papeis.map((papel,i)=>Object.assign({papel, pessoa:quem[i], status:'pendente'},
+    tudo ? {status:'aprovado', em:(estados[i]||{}).em||ultimo} : (estados[i]||{})));
+}
+/* triagem dos MOCs de vitrine (dados fictícios): deriva as respostas do perfil de impacto */
+function triSeed(av){
+  const r = resumoImpacto(av);
+  if(r.criticas) return {t1:'nao'};
+  if(r.sins>=4)  return {t1:'sim', t2:'sim', t3:'nao'};
+  return {t1:'sim', t2:'sim', t3:'sim'};
 }
 
 /* --- MOC 1: o caso mostrado na reunião (Virador de Pets Pacific 2) --- */
@@ -670,12 +772,12 @@ function mkAprov(tipo, complexo, estados){
     tipoAlt:'Equipamento', impacto:'Médio', site:'Pouso Alegre', area:'Envase — Linha PET 2',
     solicitante:'leo', responsavel:'leo', participantes:['leo','rogerio','ana','carlos'],
     criado:base, dtIni:'2026-07-20', dtFim:'2026-09-15', concluido:null,
-    av, acoes:mkAcoes(id,av,base), complexo:true,
+    av, acoes:mkAcoes(id,av,base), tri:triSeed(av), complexo:true, equip:'Virador / transportador de potes PET',
     aprovacoes:mkAprov('Permanente',true,[
       {status:'aprovado', em:'2026-07-02', obs:'De acordo com o conceito. Atentar ao plano de partida.'},
       {status:'pendente', prazo:'2026-07-17'},
       {status:'pendente', prazo:'2026-07-19'},
-      {status:'pendente'},{status:'pendente'},
+      {status:'pendente'},{status:'pendente'},{status:'pendente'},
     ]),
     anexos:[{n:'Desenho_Virador_Pacific2_rev2.pdf',t:'2,4 MB',por:'rogerio',em:'2026-06-24'},
             {n:'Certificado_material_polimerico.pdf',t:'610 KB',por:'ana',em:'2026-06-28'},
@@ -707,7 +809,9 @@ const VITRINE = [
    she:'Quality\nAtenção: alteração de material de embalagem primária — exige aprovação de cliente.', tipoAlt:'Material / Insumo', imp:'Médio',
    sol:'carlos', resp:'ana', part:['carlos','ana','eduardo'], ini:'2026-08-01', fim:'2026-10-20',
    av:{q4:{r:'sim',status:'aberta'}, q7:{r:'sim',status:'aberta'}, q8:{r:'sim',status:'aberta'}, q9:{r:'sim',status:'aberta'}},
-   apr:[{status:'aprovado',em:'2026-07-05'},{status:'pendente',prazo:'2026-07-16'},{status:'pendente',prazo:'2026-07-18'},{status:'pendente'},{status:'pendente'}]},
+   // Ana é Revisora 2 e Aprovadora de Implementação em sequência: demonstra o aceite em lote
+   pessoas:['carlos','vania','ana','ana','eduardo','roberto'],
+   apr:[{status:'aprovado',em:'2026-07-05'},{status:'aprovado',em:'2026-07-08'},{status:'pendente',prazo:'2026-07-16'},{status:'pendente'},{status:'pendente'},{status:'pendente'}]},
 
   {base:'2026-07-06', tipo:'Temporário', status:'conceito', tit:'Instalação provisória de exaustor — Sala de Preparo', site:'Pouso Alegre', area:'Preparo',
    desc:'Instalação de exaustor móvel durante obra de readequação do sistema de ventilação.',
@@ -739,7 +843,7 @@ const VITRINE = [
    she:'Chemicals\nAtenção: novo químico — FISPQ e EPI específicos.', tipoAlt:'Material / Insumo', imp:'Alto',
    sol:'ana', resp:'ana', part:['ana','vania','juliana','carlos'], ini:'2026-03-15', fim:'2026-05-20',
    av:{q6:{r:'sim',status:'concluida'}, q12:{r:'sim',status:'concluida'}, q13:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'concluida'}},
-   apr:[{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-05-20'}], concl:'2026-05-18'},
+   apr:[{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-12'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-03-13'},{status:'aprovado',em:'2026-05-20'}], concl:'2026-05-18', desfecho:'revertido'},
 
   {base:'2026-02-02', tipo:'Permanente', status:'rejeitado', tit:'Redução do tempo de enxágue pós-CIP', site:'Pouso Alegre', area:'Envase — Linha PET 2',
    desc:'Proposta de redução do tempo de enxágue final de 12 para 7 minutos.',
@@ -780,20 +884,31 @@ const VITRINE = [
    sol:'silvia', resp:'silvia', part:['silvia','vania'], ini:'2026-05-05', fim:'2026-06-25',
    av:{q1:{r:'sim',status:'concluida'}, q14:{r:'sim',status:'concluida'}, q16:{r:'sim',status:'concluida'}},
    apr:[{status:'aprovado',em:'2026-04-30'},{status:'aprovado',em:'2026-05-01'},{status:'aprovado',em:'2026-05-02'},{status:'aprovado',em:'2026-05-02'},{status:'aprovado',em:'2026-06-25'}], concl:'2026-06-22'},
+
+  /* Emergencial: mudança feita ontem sem MOC; formalização vence no próximo dia útil (hoje) */
+  {base:'2026-07-14', tipo:'Emergencial', status:'conceito', tit:'Troca emergencial do selo mecânico da bomba P-310', site:'Pouso Alegre', area:'Utilidades',
+   desc:'O selo mecânico da bomba de recirculação P-310 apresentou vazamento no turno da noite e foi substituído por modelo equivalente de outro fabricante para evitar a parada da linha.',
+   just:'Vazamento com risco de parada da linha e de contato com produto químico. Não havia peça original em estoque.',
+   she:'Safety/Health\nAtenção: troca realizada sem MOC prévio, por urgência.', tipoAlt:'Equipamento', imp:'Médio', equip:'Bomba de recirculação P-310',
+   sol:'eduardo', resp:'eduardo', part:['eduardo','rogerio','vania'], ini:'2026-07-14', fim:'2026-08-28',
+   av:{q13:{r:'sim',status:'aberta'}, q17:{r:'sim',status:'aberta'}, q3:{r:'na'}, q10:{r:'na'}, q11:{r:'na'}},
+   tri:{t1:'sim', t2:'sim', t3:'sim'},
+   apr:[{status:'pendente', prazo:'2026-07-15'}]},
 ];
 
 VITRINE.forEach(v=>{
   const id = mocId(v.base);
-  const complexo = calcComplexidade(v.av).complexo;
+  const tri = v.tri || triSeed(v.av);
+  const complexo = classificar(tri).complexo;
   const avFull = Object.assign({}, v.av);
   QUESTOES.forEach(q=>{ if(!avFull[q.id]) avFull[q.id]={r:'nao'}; });
   MOCS.push({
     id, tipo:v.tipo, status:v.status, titulo:v.tit, desc:v.desc, justificativa:v.just, impactoSHE:v.she,
-    tipoAlt:v.tipoAlt, impacto:v.imp, site:v.site, area:v.area,
+    tipoAlt:v.tipoAlt, impacto:v.imp, site:v.site, area:v.area, equip:v.equip||'',
     solicitante:v.sol, responsavel:v.resp, participantes:v.part,
-    criado:v.base, dtIni:v.ini, dtFim:v.fim, concluido:v.concl||null,
-    av:avFull, acoes:mkAcoes(id,v.av,v.base), complexo,
-    aprovacoes:mkAprov(v.tipo,complexo,v.apr),
+    criado:v.base, dtIni:v.ini, dtFim:v.fim, concluido:v.concl||null, desfecho:v.desfecho||null,
+    av:avFull, acoes:mkAcoes(id,v.av,v.base), tri, complexo,
+    aprovacoes:mkAprov(v.tipo,complexo,v.apr,v.pessoas),
     anexos:[{n:'Escopo_'+id+'.pdf',t:ri(300,1800)+' KB',por:v.sol,em:v.base}],
   });
 });
@@ -967,11 +1082,52 @@ function pendentesDe(uid){
     return p && p.pessoa===uid;
   });
 }
+/* Call 21/10/2026: no sistema atual o MOC "some da tela" de quem enviou e de quem já aprovou.
+   Aqui quem participa de qualquer ponto do MOC continua enxergando o MOC até o fim. */
+const envolvido = (m,uid) => m.solicitante===uid || m.responsavel===uid || (m.participantes||[]).includes(uid) ||
+  m.aprovacoes.some(a=>a.pessoa===uid) || m.acoes.some(a=>a.resp===uid);
+const ehDono = (m,uid) => m.solicitante===uid || m.responsavel===uid;
 function meusMOCs(uid){
   if(ROLE==='admin' || ROLE==='viewer') return MOCS;
-  return MOCS.filter(m=>m.solicitante===uid || m.responsavel===uid || (m.participantes||[]).includes(uid));
+  return MOCS.filter(m=>envolvido(m,uid));
 }
 const acoesAbertas = m => m.acoes.filter(a=>a.status!=='concluida');
+/* com quem o MOC está agora e desde quando */
+function comQuemEsta(m){
+  if(m.status==='rascunho') return {quem:m.solicitante, todos:[m.solicitante], lb:'Rascunho com o iniciador', desde:m.criado};
+  if(m.status==='conceito'){
+    const i = m.aprovacoes.findIndex(a=>a.status==='pendente');
+    if(i<0) return null;
+    const a = m.aprovacoes[i];
+    return {quem:a.pessoa, todos:[a.pessoa], lb:a.papel, desde:(i>0 && m.aprovacoes[i-1].em) || m.criado, prazo:a.prazo};
+  }
+  if(m.status==='aprovado' || m.status==='execucao'){
+    const ab = acoesAbertas(m);
+    if(ab.length){ const resp = [...new Set(ab.map(a=>a.resp))];
+      return {quem:resp[0], todos:resp, lb:ab.length+' ação(ões) em aberto', desde:null}; }
+    return {quem:m.responsavel, todos:[m.responsavel], lb:'Liberado para encerramento', desde:null};
+  }
+  return null;
+}
+function comQuemCell(m){
+  const w = comQuemEsta(m);
+  if(!w) return '<span class="tiny">—</span>';
+  const dias = w.desde ? diffDias(w.desde, HOJE_S) : null;
+  return avatarChip(w.quem)+(w.todos.length>1?' <span class="tiny">+'+(w.todos.length-1)+'</span>':'')+
+    '<div class="tiny" style="margin-top:3px">'+esc(w.lb)+(dias!=null?' · há '+dias+'d':'')+'</div>';
+}
+/* níveis pendentes seguidos da mesma pessoa, a partir do atual (aceite em lote) */
+function blocoPendente(m){
+  const i = m.aprovacoes.findIndex(a=>a.status==='pendente');
+  if(i<0) return [];
+  const p = m.aprovacoes[i].pessoa, out = [];
+  for(let j=i;j<m.aprovacoes.length;j++){
+    const a = m.aprovacoes[j];
+    if(a.status!=='pendente' || a.pessoa!==p) break;
+    out.push(j);
+  }
+  return out;
+}
 function slaAprovStatus(a){
   if(!a.prazo) return null;
   const d = diffDias(HOJE_S, a.prazo);
@@ -988,8 +1144,8 @@ function mocAtrasado(m){
 /* ---------------- componentes reutilizáveis ---------------- */
 function stPill(s){ const x=STATUS[s]||{lb:s,cls:'neutral'}; return '<span class="pill '+x.cls+'">'+x.lb+'</span>'; }
 function acPill(s){ const x=ACST[s]||{lb:s,cls:'neutral'}; return '<span class="pill '+x.cls+'">'+x.lb+'</span>'; }
-function cxPill(c){ return c ? '<span class="pill danger">Complexo · '+REGRA.complexoAprov+' aprovadores</span>'
-                             : '<span class="pill ok">Simples · '+REGRA.simplesAprov+' aprovadores</span>'; }
+function cxPill(c){ return c ? '<span class="pill danger">Complexo · mín. '+REGRA.minRevComplexo+' revisores + PSSR</span>'
+                             : '<span class="pill ok">Simples · mín. '+REGRA.minRevSimples+' revisor</span>'; }
 function avatarChip(uid){
   return '<span style="display:inline-flex;align-items:center;gap:7px">'+
     '<span style="width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand-deep);display:grid;place-items:center;font-size:9.5px;font-weight:700;flex:none">'+initials(pName(uid))+'</span>'+
@@ -999,8 +1155,8 @@ function tblMOCs(list, opts){
   opts = opts||{};
   if(!list.length) return '<div class="pad muted" style="text-align:center;padding:34px">Nenhum MOC encontrado.</div>';
   return '<div class="tbl-wrap"><table><thead><tr>'+
-    '<th>MOC</th><th>Título</th><th>Tipo</th><th>Local / Área</th><th>Responsável</th>'+
-    '<th>Status</th><th>Complexidade</th><th>Ações abertas</th><th>Prazo</th>'+
+    '<th>MOC</th><th>Título</th><th>Tipo</th><th>Local / Área</th><th>Coordenador</th>'+
+    '<th>Status</th><th>Com quem está agora</th><th>Complexidade</th><th>Ações abertas</th><th>Prazo</th>'+
     '</tr></thead><tbody>'+
     list.map(m=>{
       const ab = acoesAbertas(m).length;
@@ -1012,6 +1168,7 @@ function tblMOCs(list, opts){
         '<td class="tiny">'+esc(m.site)+'<br>'+esc(m.area)+'</td>'+
         '<td>'+avatarChip(m.responsavel)+'</td>'+
         '<td>'+stPill(m.status)+'</td>'+
+        '<td style="min-width:190px">'+comQuemCell(m)+'</td>'+
         '<td>'+(m.complexo?'<span class="pill danger">Complexo</span>':'<span class="pill ok">Simples</span>')+'</td>'+
         '<td>'+(ab?'<span class="pill warn">'+ab+' aberta'+(ab>1?'s':'')+'</span>':'<span class="pill ok">0</span>')+'</td>'+
         '<td class="tiny'+(atr?' ':'')+'">'+fmt(m.dtFim)+(atr?'<br><span class="pill danger">Em atraso</span>':'')+'</td>'+
@@ -1074,6 +1231,8 @@ function vHome(){
     '</div>'+
   '</div>'+
 
+  acompanhamento()+
+
   '<div class="grid2" style="margin-top:16px;align-items:start">'+
     '<div class="card pad">'+
       '<div class="panel-head"><div class="section-title">MOCs por etapa do ciclo</div><span class="tiny">atualizado agora</span></div>'+
@@ -1089,6 +1248,31 @@ function vHome(){
     '<div class="panel-head"><div class="section-title">MOCs recentes</div>'+
       '<button class="btn perm-w" onclick="novoMOC()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> Adicionar novo MOC</button></div>'+
     tblMOCs(meus.slice(0,7))+
+  '</div>';
+}
+
+/* acompanhamento: o MOC não some da tela de quem enviou (call 21/10/2026) */
+function acompanhamento(){
+  const ativos = ['rascunho','conceito','aprovado','execucao'];
+  const geral = ROLE==='admin' || ROLE==='viewer';
+  const lista = (geral ? MOCS : MOCS.filter(m=>ehDono(m,USER))).filter(m=>ativos.includes(m.status));
+  return '<div class="card pad" id="acomp" style="margin-top:16px">'+
+    '<div class="panel-head"><div><div class="section-title">'+(geral?'Onde está cada MOC agora':'Onde estão os meus MOCs')+'</div>'+
+      '<div class="tiny" style="margin-top:3px">Depois de enviado, o MOC continua visível: etapa atual, com quem está e há quanto tempo.</div></div>'+
+      '<button class="btn ghost sm" onclick="fMeus.visao=\''+(geral?'':'dono')+'\';switchView(\'meus\')">Ver na lista</button></div>'+
+    (lista.length ? '<div class="tbl-wrap"><table><thead><tr><th>MOC</th><th>Etapa</th><th>Com quem está agora</th><th>Ações abertas</th><th>Prazo</th></tr></thead><tbody>'+
+      lista.map(m=>{
+        const g = GATES[gateIdx(gateDeMoc(m))], ab = acoesAbertas(m).length, atr = mocAtrasado(m);
+        return '<tr class="clk" onclick="abrirMOC(\''+m.id+'\')">'+
+          '<td style="min-width:220px"><span class="mono" style="font-size:11px;font-weight:700;color:var(--brand)">'+m.id+'</span>'+
+            '<div style="font-weight:600;font-size:13px;margin-top:2px">'+esc(m.titulo)+'</div></td>'+
+          '<td style="white-space:nowrap"><span style="display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px">'+
+            '<span style="width:9px;height:9px;border-radius:50%;background:'+(g?g.cor:'#888')+'"></span>'+(g?esc(g.lb):'—')+'</span></td>'+
+          '<td style="min-width:200px">'+comQuemCell(m)+'</td>'+
+          '<td>'+(ab?'<span class="pill warn">'+ab+'</span>':'<span class="pill ok">0</span>')+'</td>'+
+          '<td class="tiny">'+fmt(m.dtFim)+(atr?'<br><span class="pill danger">Em atraso</span>':'')+'</td></tr>';
+      }).join('')+'</tbody></table></div>'
+    : '<div class="muted" style="padding:24px;text-align:center">Nenhum MOC seu em andamento.</div>')+
   '</div>';
 }
 
@@ -1121,26 +1305,47 @@ function drawHome(){
 /* ============================================================
    TELAS: LISTAS
    ============================================================ */
-let fMeus = {status:'', site:'', tipo:'', q:''};
+const F_MEUS0 = {visao:'', status:'', site:'', tipo:'', cx:'', resp:'', com:'', prazo:'', q:''};
+let fMeus = Object.assign({}, F_MEUS0);
 function vMeus(){
-  let list = meusMOCs(USER);
+  const base = meusMOCs(USER);
+  let list = base;
+  const com = m => (comQuemEsta(m)||{todos:[]}).todos;
+  if(fMeus.visao==='dono')      list = list.filter(m=>ehDono(m,USER));
+  if(fMeus.visao==='comigo')    list = list.filter(m=>com(m).includes(USER));
+  if(fMeus.visao==='participo') list = list.filter(m=>envolvido(m,USER));
   if(fMeus.status) list = list.filter(m=>m.status===fMeus.status);
   if(fMeus.site)   list = list.filter(m=>m.site===fMeus.site);
   if(fMeus.tipo)   list = list.filter(m=>m.tipo===fMeus.tipo);
-  if(fMeus.q)      list = list.filter(m=>(m.id+' '+m.titulo+' '+m.area).toLowerCase().includes(fMeus.q.toLowerCase()));
+  if(fMeus.cx)     list = list.filter(m=>(m.complexo?'Complexo':'Simples')===fMeus.cx);
+  if(fMeus.resp)   list = list.filter(m=>m.responsavel===fMeus.resp);
+  if(fMeus.com)    list = list.filter(m=>com(m).includes(fMeus.com));
+  if(fMeus.prazo==='atraso') list = list.filter(mocAtrasado);
+  if(fMeus.prazo==='prazo')  list = list.filter(m=>['rascunho','conceito','aprovado','execucao'].includes(m.status) && !mocAtrasado(m));
+  if(fMeus.q)      list = list.filter(m=>(m.id+' '+m.titulo+' '+m.area+' '+(m.equip||'')).toLowerCase().includes(fMeus.q.toLowerCase()));
 
+  const pessoasDe = f => [...new Set(base.flatMap(f))].filter(Boolean).sort((a,b)=>pName(a).localeCompare(pName(b)));
+  const ativos = Object.keys(F_MEUS0).filter(k=>fMeus[k]).length;
   return '<div class="filters">'+
+    '<span class="lb">Visão</span>'+
+    '<select onchange="fMeus.visao=this.value;render()">'+opt(['','dono','comigo','participo'], fMeus.visao,
+      v=>({'':ROLE==='admin'||ROLE==='viewer'?'Todos os MOCs':'Todos que eu acompanho', dono:'Sou o dono (iniciador ou coordenador)', comigo:'Está comigo agora', participo:'Participo'})[v])+'</select>'+
     '<span class="lb">Filtros</span>'+
     '<select onchange="fMeus.status=this.value;render()">'+opt(['','rascunho','conceito','aprovado','execucao','concluido','rejeitado'], fMeus.status, v=>v?STATUS[v].lb:'Todos os status')+'</select>'+
+    '<select onchange="fMeus.tipo=this.value;render()">'+opt([''].concat(TIPOS), fMeus.tipo, v=>v||'Todos os tipos')+'</select>'+
+    '<select onchange="fMeus.cx=this.value;render()">'+opt(['','Simples','Complexo'], fMeus.cx, v=>v||'Simples e complexos')+'</select>'+
     '<select onchange="fMeus.site=this.value;render()">'+opt([''].concat(SITES), fMeus.site, v=>v||'Todas as unidades')+'</select>'+
-    '<select onchange="fMeus.tipo=this.value;render()">'+opt(['','Permanente','Temporário'], fMeus.tipo, v=>v||'Todos os tipos')+'</select>'+
-    '<input type="text" style="width:210px" placeholder="Buscar por título ou número" value="'+esc(fMeus.q)+'" oninput="fMeus.q=this.value;clearTimeout(window._fq);window._fq=setTimeout(render,250)">'+
+    '<select onchange="fMeus.resp=this.value;render()">'+opt([''].concat(pessoasDe(m=>[m.responsavel])), fMeus.resp, v=>v?pName(v):'Qualquer coordenador')+'</select>'+
+    '<select onchange="fMeus.com=this.value;render()">'+opt([''].concat(pessoasDe(com)), fMeus.com, v=>v?'Com '+pName(v):'Com qualquer pessoa')+'</select>'+
+    '<select onchange="fMeus.prazo=this.value;render()">'+opt(['','atraso','prazo'], fMeus.prazo, v=>({'':'Qualquer prazo', atraso:'Em atraso', prazo:'No prazo'})[v])+'</select>'+
+    '<input type="text" style="width:210px" placeholder="Buscar por título, número ou equipamento" value="'+esc(fMeus.q)+'" oninput="fMeus.q=this.value;clearTimeout(window._fq);window._fq=setTimeout(render,250)">'+
+    (ativos?'<button class="btn ghost sm" onclick="fMeus=Object.assign({},F_MEUS0);render()">Limpar filtros ('+ativos+')</button>':'')+
     '<div class="spacer"></div>'+
     '<button class="btn ghost sm" onclick="exportar(\'MOCs\')"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exportar</button>'+
     '<button class="btn sm perm-w" onclick="novoMOC()">+ Novo MOC</button>'+
   '</div>'+
   '<div class="card">'+tblMOCs(list)+'</div>'+
-  '<div class="tiny" style="margin-top:10px">'+list.length+' MOC(s) · '+(ROLE==='admin'?'perfil Admin enxerga todos os MOCs da unidade':'você vê os MOCs em que participa')+'</div>';
+  '<div class="tiny" style="margin-top:10px">'+list.length+' de '+base.length+' MOC(s) · '+(ROLE==='admin'?'perfil Admin enxerga todos os MOCs da unidade':'você vê todos os MOCs em que participa, inclusive depois de enviar ou aprovar')+'</div>';
 }
 function opt(vals, sel, lb){
   return vals.map(v=>'<option value="'+esc(v)+'"'+(v===sel?' selected':'')+'>'+esc(lb?lb(v):v)+'</option>').join('');
@@ -1162,7 +1367,7 @@ function vAprovar(){
         '<td style="font-weight:600">'+esc(x.m.titulo)+' '+(x.m.complexo?'<span class="pill danger" style="font-size:9px">Complexo</span>':'')+'</td>'+
         '<td>'+avatarChip(x.m.solicitante)+'</td>'+
         '<td class="tiny">'+fmt(x.m.criado)+'</td>'+
-        '<td class="tiny"><b>'+esc(x.a.papel)+'</b></td>'+
+        '<td class="tiny"><b>'+esc(x.a.papel)+'</b>'+(blocoPendente(x.m).length>1?'<br><span class="pill info" style="font-size:9.5px;margin-top:4px">+'+(blocoPendente(x.m).length-1)+' nível seu em sequência · aprova junto</span>':'')+'</td>'+
         '<td>'+(x.s?'<span class="pill '+x.s.cls+'">'+x.s.lb+'</span>':'<span class="tiny">—</span>')+'</td>'+
         '<td style="white-space:nowrap"><button class="btn ghost sm" onclick="abrirMOC(\''+x.m.id+'\')">Visualizar</button> '+
           '<button class="btn ok sm perm-w" onclick="decidir(\''+x.m.id+'\',\'aprovado\')">Aprovar</button> '+
@@ -1190,7 +1395,7 @@ function vMOC(){
   const tabs = [
     ['inicio','Início'], ['impacto','Avaliação de impacto'], ['preinit','Análise de Pré-Iniciação'],
   ];
-  if(m.complexo) tabs.push(['pssr','PSSR']);
+  if(m.complexo) tabs.push(['pssr','PSSR / Pós-inicialização']);
   tabs.push(['aprov','Aprovações'], ['funcoes','Funções por etapa'],
     ['acoes','Itens de ação'], ['anexos','Anexos'], ['emails','Notificações de E-mail'], ['trilha','Trilha da Auditoria']);
   if(MOCTAB==='pssr' && !m.complexo) MOCTAB='inicio';
@@ -1208,9 +1413,12 @@ function vMOC(){
       (m.status==='conceito' && proximoAprovador(m) && proximoAprovador(m).pessoa===USER ?
         '<button class="btn ok perm-w" onclick="decidir(\''+m.id+'\',\'aprovado\')">Aprovar</button>'+
         '<button class="btn danger perm-w" onclick="decidir(\''+m.id+'\',\'rejeitado\')">Rejeitar</button>' : '')+
+      (['conceito','aprovado','execucao'].includes(m.status) && (ehDono(m,USER) || ROLE==='admin') ?
+        '<button class="btn perm-w" style="background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)" onclick="reavaliar(\''+m.id+'\')">Reavaliar prazo</button>' : '')+
       (m.status==='execucao' ? '<button class="btn perm-w" style="background:#fff;color:var(--brand)" onclick="encerrar(\''+m.id+'\')">Encerrar MOC</button>' : '')+
     '</div>'+
     gateStepper(m)+
+    nowBar(m)+
     '<div class="moc-body">'+
       '<div class="moc-nav">'+
         '<div class="id">'+m.id+'</div>'+
@@ -1222,6 +1430,29 @@ function vMOC(){
     '</div>'+
   '</div>'+
   (ab && m.status!=='concluido' ? '<div class="note" style="border-left-color:var(--warn);background:var(--warn-soft);margin-top:14px"><b>MOC não pode ser encerrado:</b> existem '+ab+' item(ns) de ação em aberto. O encerramento só é liberado quando todas as ações estiverem concluídas.</div>' : '');
+}
+
+/* barra sob o stepper: com quem o MOC está, há quanto tempo e, no Emergencial, o prazo de formalização */
+function nowBar(m){
+  const w = comQuemEsta(m), parts = [];
+  if(w){
+    const dias = w.desde ? diffDias(w.desde, HOJE_S) : null;
+    parts.push('<span class="k">Com quem está agora</span>'+avatarChip(w.quem)+
+      (w.todos.length>1?'<span class="tiny">+ '+esc(w.todos.slice(1).map(pName).join(', '))+'</span>':'')+
+      '<span class="tiny">'+esc(w.lb)+(dias!=null?' · aguardando há '+dias+' dia(s)':'')+(w.prazo?' · prazo '+fmt(w.prazo):'')+'</span>');
+  } else {
+    parts.push('<span class="k">Situação</span><span class="tiny">'+(m.status==='concluido'?'MOC encerrado em '+fmt(m.concluido):'MOC rejeitado e devolvido ao iniciador')+'</span>');
+  }
+  if(isEmerg(m.tipo)){
+    const fz = prazoFormalizacao(m.dtIni), d = diffDias(HOJE_S, fz);
+    const site = m.aprovacoes.find(a=>a.papel===P_SITE);
+    parts.push('<span class="sep"></span><span class="k">Emergencial</span>'+
+      '<span class="tiny">Implementada em '+fmt(m.dtIni)+' · formalização até <b>'+fmt(fz)+'</b> (próximo dia útil)</span>'+
+      (site && site.status==='aprovado' ? '<span class="pill ok">Site Lead aprovou</span>'
+        : m.status==='rejeitado' ? '' : d<0 ? '<span class="pill danger">Formalização vencida</span>'
+        : d===0 ? '<span class="pill warn">Vence hoje</span>' : '<span class="pill info">No prazo</span>'));
+  }
+  return '<div class="now-bar">'+parts.join('')+'</div>';
 }
 
 function paneInicio(m){
@@ -1237,24 +1468,50 @@ function paneInicio(m){
       '<dt>Impacto associado</dt><dd>'+esc(m.impacto)+'</dd>'+
       '<dt>Unidade</dt><dd>'+esc(m.site)+'</dd>'+
       '<dt>Onde acontece (área)</dt><dd>'+esc(m.area)+'</dd>'+
-      '<dt>Solicitante</dt><dd>'+avatarChip(m.solicitante)+'</dd>'+
-      '<dt>Responsável</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
+      (m.equip?'<dt>Equipamento / instalação</dt><dd>'+esc(m.equip)+'</dd>':'')+
+      '<dt>Iniciador (dono do MOC)</dt><dd>'+avatarChip(m.solicitante)+'</dd>'+
+      '<dt>Coordenador do MOC</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
       '<dt>Pessoas presentes</dt><dd>'+m.participantes.map(p=>'<span class="pill neutral" style="margin:2px 3px 2px 0">'+esc(pName(p))+'</span>').join('')+'</dd>'+
-      '<dt>Início planejado</dt><dd>'+fmt(m.dtIni)+'</dd>'+
-      '<dt>Conclusão planejada</dt><dd>'+fmt(m.dtFim)+' '+(mocAtrasado(m)?'<span class="pill danger">Fora da janela</span>':'')+'</dd>'+
-      '<dt>Janela do MOC</dt><dd>'+diffDias(m.dtIni,m.dtFim)+' dias <span class="tiny">(SLA: '+(SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias)</span></dd>'+
-      '<dt>Complexidade</dt><dd>'+cxPill(m.complexo)+'</dd>'+
+      '<dt>'+(isEmerg(m.tipo)?'Implementada em':'Início planejado')+'</dt><dd>'+fmt(m.dtIni)+'</dd>'+
+      '<dt>Conclusão planejada</dt><dd>'+fmt(m.dtFim)+' '+(mocAtrasado(m)?'<span class="pill danger">Fora do prazo</span>':'')+'</dd>'+
+      '<dt>Prazo do MOC</dt><dd>'+diffDias(m.dtIni,m.dtFim)+' dias <span class="tiny">('+
+        (m.tipo==='Temporário'?'período inicial até '+limTemp()+' dias; ':'')+'limite com reavaliação: '+limMax()+' dias)</span></dd>'+
+      ((m.reavaliacoes||[]).length?'<dt>Reavaliações de prazo</dt><dd>'+m.reavaliacoes.map(r=>
+        '<div class="tiny" style="margin-bottom:3px">'+fmt(r.em)+' · '+esc(pName(r.por))+': '+fmt(r.de)+' → <b>'+fmt(r.para)+'</b>'+(r.obs?' · "'+esc(r.obs)+'"':'')+'</div>').join('')+'</dd>':'')+
+      (m.desfecho?'<dt>Desfecho do temporário</dt><dd>'+(m.desfecho==='convertido'?'<span class="pill info">Convertido em permanente</span>':'<span class="pill ok">Revertido à condição original</span>')+'</dd>':'')+
+      '<dt>Complexidade</dt><dd>'+cxPill(m.complexo)+' <span class="tiny">'+esc(classificar(m.tri).motivo)+'</span></dd>'+
     '</dl>';
 }
 
+/* legenda das respostas (explicação da Vânia na call de 21/10/2026) */
+const ANS_KEY = '<div class="ans-key"><span><b>Sim:</b> há impacto e o sistema gera uma ação.</span>'+
+  '<span><b>Não:</b> o item já tem a tratativa, nenhuma ação nova.</span>'+
+  '<span><b>Não se aplica:</b> o item não existe nesta mudança.</span></div>';
+
+/* triagem somente leitura (detalhe do MOC) */
+function triagemRO(tri){
+  const c = classificar(tri);
+  return TRIAGEM.map((t,i)=>{
+    const r = (tri||{})[t.id];
+    if(!r) return '';
+    return '<div class="tri-q '+(r==='sim'?'sim':'nao')+'"><div class="q-top"><div class="q-txt"><span class="tri-n">'+(i+1)+'</span>'+esc(t.txt)+'</div>'+
+      '<div class="q-opts"><span class="q-opt'+(r==='sim'?' on-yes':'')+'">Sim</span><span class="q-opt'+(r==='nao'?' on-no':'')+'">Não</span></div></div></div>';
+  }).join('')+
+  (c.definido && c.complexo && c.falhou<TRIAGEM.length-1 ? '<div class="tiny" style="margin:-2px 0 10px">As perguntas seguintes não são feitas: um "Não" já classifica o MOC como complexo.</div>' : '');
+}
+
 function paneImpacto(m){
-  const c = calcComplexidade(m.av);
-  return '<div class="sec-h">Avaliação de impacto</div>'+
-    '<div class="note"><b>Como funciona:</b> cada resposta <b>"Sim"</b> gera automaticamente um item de ação com responsável e prazo. '+
-    'A quantidade e a criticidade das respostas definem se o MOC é <b>simples</b> (3 aprovadores) ou <b>complexo</b> ('+REGRA.complexoAprov+' aprovadores).</div>'+
+  const c = resumoImpacto(m.av);
+  return '<div class="sec-h">Triagem · Simples ou Complexo</div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:center">'+cxPill(m.complexo)+
+      '<span class="tiny">'+esc(classificar(m.tri).motivo)+'</span></div>'+
+    triagemRO(m.tri)+
+    '<div class="sec-h">Avaliação de impacto</div>'+
+    '<div class="note"><b>Obrigatória em todos os MOCs.</b> Cada resposta <b>"Sim"</b> gera automaticamente um item de ação com responsável e prazo.</div>'+
+    ANS_KEY+
     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">'+
-      cxPill(m.complexo)+
-      '<span class="pill info">'+c.sins+' impactos identificados</span>'+
+      '<span class="pill info">'+c.sins+' impacto(s) identificado(s)</span>'+
+      (c.na?'<span class="pill neutral">'+c.na+' não se aplica</span>':'')+
       (c.criticas?'<span class="pill danger">'+c.criticas+' crítico(s)</span>':'')+
       (c.qualidade?'<span class="pill qual">'+c.qualidade+' de Qualidade</span>':'')+
     '</div>'+
@@ -1268,9 +1525,10 @@ function paneImpacto(m){
         qs.map(q=>{
           const a = m.av[q.id]||{r:'—'};
           const sim = a.r==='sim';
-          return '<div class="q'+(sim?' yes':'')+(d.destaque?' q-qual':'')+'">'+
+          return '<div class="q'+(sim?' yes':'')+(a.r==='na'?' na':'')+(d.destaque?' q-qual':'')+'">'+
             '<div class="q-top"><div class="q-txt">'+esc(q.txt)+(q.critica?' <span class="pill danger" style="font-size:9px">crítica</span>':'')+'</div>'+
-            '<div class="q-opts"><span class="q-opt'+(sim?' on-yes':'')+'">Sim</span><span class="q-opt'+(a.r==='nao'?' on-no':'')+'">Não</span></div></div>'+
+            '<div class="q-opts"><span class="q-opt'+(sim?' on-yes':'')+'">Sim</span><span class="q-opt'+(a.r==='nao'?' on-no':'')+'">Não</span>'+
+              '<span class="q-opt'+(a.r==='na'?' on-na':'')+'">Não se aplica</span></div></div>'+
             (sim && a.obs ? '<div class="tiny" style="margin-top:8px;font-style:italic">'+esc(a.obs)+'</div>' : '')+
             (sim ? '<div class="tiny" style="margin-top:6px"><span class="auto-tag">ação gerada</span> '+esc(q.acao)+' · '+esc(pName(a.resp||q.resp))+'</div>' : '')+
           '</div>';
@@ -1280,10 +1538,12 @@ function paneImpacto(m){
 }
 
 function paneAprov(m){
-  const cfg = cfgFor(m.tipo, m.complexo);
+  const nRev = m.aprovacoes.filter(a=>isRevisor(a.papel)).length;
   return '<div class="sec-h">Aprovações</div>'+
-    '<div class="note"><b>Régua de aprovação:</b> '+(m.complexo?'MOC <b>complexo</b> — '+REGRA.complexoAprov+' aprovadores.':'MOC <b>simples</b> — '+REGRA.simplesAprov+' aprovadores.')+
-    ' Motivo: '+esc(calcComplexidade(m.av).motivo)+'. O MOC só avança após a aprovação de cada nível.</div>'+
+    '<div class="note"><b>Régua de aprovação:</b> MOC <b>'+(m.complexo?'complexo':'simples')+'</b> ('+esc(classificar(m.tri).motivo)+'). '+
+    nRev+' revisor(es) na Análise, mínimo exigido: '+minRev(m.complexo)+'.'+(m.complexo?' PSSR obrigatório.':'')+
+    (isEmerg(m.tipo)?' Emergencial: inclui a aprovação escrita do Site Lead (ou substituto).':'')+
+    ' O MOC só avança após a aprovação de cada nível, e todos os envolvidos continuam acompanhando.</div>'+
     '<div class="tl" style="margin:16px 0 8px">'+
       m.aprovacoes.map((a,i)=>{
         const s = slaAprovStatus(a);
@@ -1302,8 +1562,8 @@ function paneAprov(m){
     '</div>'+
     '<div class="sec-h">Responsabilidades finais</div>'+
     '<dl class="kv">'+
-      cfg.papeis.map((p,i)=>'<dt>'+esc(p)+'</dt><dd>'+avatarChip(cfg.pessoas[i])+'</dd>').join('')+
-      '<dt>Responsável por análise pré-iniciação</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
+      m.aprovacoes.map(a=>'<dt>'+esc(a.papel)+'</dt><dd>'+avatarChip(a.pessoa)+'</dd>').join('')+
+      '<dt>Coordenador do MOC (pré-iniciação)</dt><dd>'+avatarChip(m.responsavel)+'</dd>'+
     '</dl>';
 }
 
@@ -1351,8 +1611,11 @@ function paneEmails(m){
 function paneTrilha(m){
   const ev = [];
   ev.push({d:m.criado, w:'MOC criado', m:'Criado por '+pName(m.solicitante)+' · tipo '+m.tipo, cls:''});
-  const c = calcComplexidade(m.av);
-  ev.push({d:m.criado, w:'Avaliação de impacto respondida', m:c.sins+' impactos identificados → '+m.acoes.length+' ação(ões) gerada(s) automaticamente · classificado como '+(m.complexo?'COMPLEXO':'SIMPLES'), cls:''});
+  const c = resumoImpacto(m.av);
+  ev.push({d:m.criado, w:'Triagem Simples × Complexo', m:'Classificado como '+(m.complexo?'COMPLEXO':'SIMPLES')+' · '+classificar(m.tri).motivo, cls:''});
+  ev.push({d:m.criado, w:'Avaliação de impacto respondida', m:c.sins+' "Sim" · '+c.na+' "Não se aplica" → '+m.acoes.length+' ação(ões) gerada(s) automaticamente', cls:''});
+  (m.reavaliacoes||[]).forEach(r=>ev.push({d:r.em, cls:'pend', w:'Prazo reavaliado', m:fmt(r.de)+' → '+fmt(r.para)+' · '+pName(r.por)+(r.obs?' · "'+r.obs+'"':'')}));
+  if(m.desfecho) ev.push({d:m.concluido||HOJE_S, cls:'ok', w:'Desfecho do temporário', m:m.desfecho==='convertido'?'Convertido em permanente':'Revertido à condição original'});
   m.aprovacoes.filter(a=>a.em).forEach(a=>ev.push({d:a.em, cls:a.status==='aprovado'?'ok':'no',
     w:(a.status==='aprovado'?'Aprovado':'Rejeitado')+' — '+a.papel, m:pName(a.pessoa)+(a.obs?' · "'+a.obs+'"':'')}));
   m.acoes.filter(a=>a.concluidaEm).forEach(a=>ev.push({d:a.concluidaEm, cls:'ok', w:'Ação concluída — '+a.titulo, m:a.id+' · '+pName(a.resp)}));
@@ -1424,13 +1687,18 @@ function questPlaceholder(titulo, quando, questoes){
 }
 function panePreInit(m){
   return '<div class="sec-h">Análise de Pré-Iniciação</div>'+
-    '<div class="note"><b>Novo questionário — aplicado a todos os MOCs.</b> Realizado antes de iniciar a execução (etapa de Implementação → Análise Pré-Startup), garante que tudo está pronto para a partida com segurança.</div>'+
+    '<div class="note"><b>Aplicada a todos os MOCs</b> (Permanente, Temporário e Emergencial). '+
+      'Acontece <b>após a inicialização do MOC</b>: é a lista de verificação do que faltou na análise inicial.</div>'+
+    '<div class="quest-quando"><span class="qq-tag">quando</span> Após a inicialização do MOC</div>'+
     questPlaceholder('Perguntas da Pré-Iniciação — a definir', 'Aplicável a todos os MOCs (Permanente, Temporário e Emergencial).', QUEST_PRE);
 }
 function panePSSR(m){
-  return '<div class="sec-h">PSSR — Pre-Startup Safety Review</div>'+
-    '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft)"><b>Novo questionário — apenas para MOC complexo.</b> Revisão de segurança pré-partida; sua aprovação (PSSR Approver) autoriza a inicialização.</div>'+
-    questPlaceholder('Perguntas do PSSR — a definir', 'Aplicável apenas a MOCs classificados como Complexo.', QUEST_PSSR);
+  return '<div class="sec-h">PSSR / Revisão pós-inicialização</div>'+
+    '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft)"><b>Obrigatório para MOC complexo.</b> '+
+      'Acontece <b>dentro da implementação</b>, com o MOC em andamento: verifica o que ainda falta e <b>se algum risco não foi mitigado</b>. A aprovação é do PSSR Approver. '+
+      'No MOC simples esta etapa não aparece.</div>'+
+    '<div class="quest-quando"><span class="qq-tag">quando</span> Dentro da implementação · verifica riscos não mitigados</div>'+
+    questPlaceholder('Checklist de PSSR / pós-inicialização — a definir', 'Aplicável apenas a MOCs classificados como Complexo.', QUEST_PSSR);
 }
 
 
@@ -1498,15 +1766,27 @@ function mailCard(e){
 /* ============================================================
    AÇÕES DO WORKFLOW
    ============================================================ */
+const slaAprov = m => m.complexo ? slaDias('Aprovação por aprovador (MOC complexo)',7) : slaDias('Aprovação por aprovador (MOC simples)',5);
+/* prazos dos dois primeiros níveis; no Emergencial o Site Lead tem até o próximo dia útil */
+function prazosIniciais(m){
+  const sla = slaAprov(m);
+  m.aprovacoes[0].prazo = m.aprovacoes[0].papel===P_SITE ? prazoFormalizacao(m.dtIni) : addDias(HOJE_S, sla);
+  if(m.aprovacoes[1]) m.aprovacoes[1].prazo = addDias(HOJE_S, sla+2);
+}
+
 function submeter(id){
   const m = byId(id);
-  const cfg = cfgFor(m.tipo, m.complexo);
+  const c = classificar(m.tri);
+  if(!c.definido){ toast('Conclua a triagem Simples × Complexo antes de enviar', 'bad'); return; }
+  if(m.complexo!==c.complexo || !m.aprovacoes.length){
+    const cfg = cfgFor(m.tipo, c.complexo);
+    m.aprovacoes = cfg.papeis.map((papel,i)=>({papel, pessoa:cfg.pessoas[i]}));
+  }
+  m.complexo = c.complexo;
+  m.aprovacoes = m.aprovacoes.map(a=>({papel:a.papel, pessoa:a.pessoa, status:'pendente'}));
   m.status = 'conceito';
-  m.aprovacoes = cfg.papeis.map((papel,i)=>({papel, pessoa:cfg.pessoas[i], status:'pendente'}));
-  const sla = m.complexo ? 7 : 5;
-  m.aprovacoes[0].prazo = addDias(HOJE_S, sla);
-  if(m.aprovacoes[1]) m.aprovacoes[1].prazo = addDias(HOJE_S, sla+2);
-  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,sla+4))}));
+  prazosIniciais(m);
+  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,slaAprov(m)+4))}));
   toast('MOC '+m.id+' enviado para aprovação · '+m.aprovacoes.length+' e-mails disparados', 'ok');
   render();
 }
@@ -1522,28 +1802,50 @@ function decidir(id, decisao){
       '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="confirmaRejeicao(\''+id+'\')">Confirmar rejeição</button>');
     return;
   }
+  const bl = blocoPendente(m);
+  const escrita = a.papel===P_SITE;
   modal('Aprovar MOC — '+m.id,
-    '<div class="note" style="border-left-color:var(--ok);background:var(--ok-soft)">Você está aprovando como <b>'+esc(a.papel)+'</b>.</div>'+
+    '<div class="note" style="border-left-color:var(--ok);background:var(--ok-soft)">Você está aprovando como <b>'+esc(a.papel)+'</b>.'+
+      (escrita?' É uma <b>aprovação escrita</b>: o texto fica registrado na trilha de auditoria.':'')+'</div>'+
     '<dl class="kv" style="margin-bottom:14px"><dt>MOC</dt><dd>'+esc(m.titulo)+'</dd>'+
       '<dt>Classificação</dt><dd>'+cxPill(m.complexo)+'</dd>'+
       '<dt>Ações abertas</dt><dd>'+acoesAbertas(m).length+'</dd></dl>'+
-    '<div class="fld"><label class="fld-l">Comentário do aprovador (opcional)</label><textarea id="aprObs" placeholder="Observações..."></textarea></div>',
+    (bl.length>1 ? '<div class="fld-l" style="margin-bottom:4px">Você também responde pelos próximos níveis</div>'+
+      '<div class="tiny" style="margin-bottom:8px">Marque os que quer aprovar agora, junto com este, sem repetir o aceite. A ordem dos níveis é mantida.</div>'+
+      bl.slice(1).map(j=>'<label class="chk-row"><input type="checkbox" class="apr-extra" data-j="'+j+'" checked> Nível '+(j+1)+' · '+esc(m.aprovacoes[j].papel)+'</label>').join('') : '')+
+    '<div class="fld" style="margin-top:12px"><label class="fld-l">'+(escrita?'Texto da aprovação escrita *':'Comentário do aprovador (opcional)')+'</label>'+
+      '<textarea id="aprObs" placeholder="'+(escrita?'Registre a aprovação do Site Lead...':'Observações...')+'"></textarea><div id="aprErr"></div></div>',
     '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn ok" onclick="confirmaAprovacao(\''+id+'\')">Confirmar aprovação</button>');
 }
 
 function confirmaAprovacao(id){
   const m = byId(id), a = proximoAprovador(m);
-  a.status='aprovado'; a.em=HOJE_S; a.obs=el('aprObs').value.trim()||null;
+  const obs = el('aprObs').value.trim();
+  if(a.papel===P_SITE && !obs){
+    el('aprObs').classList.add('err');
+    el('aprErr').innerHTML='<div class="err-msg">A aprovação do Site Lead é escrita: registre o texto da aprovação.</div>';
+    return;
+  }
+  // aceite em lote: aprova o nível atual e os seguintes marcados, parando no primeiro desmarcado
+  const marcados = new Set([...document.querySelectorAll('.apr-extra:checked')].map(x=>+x.dataset.j));
+  const bl = blocoPendente(m);
+  let n = 0;
+  for(let k=0;k<bl.length;k++){
+    if(k>0 && !marcados.has(bl[k])) break;
+    Object.assign(m.aprovacoes[bl[k]], {status:'aprovado', em:HOJE_S, obs:obs||null});
+    n++;
+  }
   enviarMail('aprovado', m, m.solicitante, {QUEM:pName(a.pessoa)});
   const prox = proximoAprovador(m);
+  const lote = n>1 ? n+' níveis aprovados de uma vez. ' : 'Aprovado. ';
   if(prox){
-    prox.prazo = addDias(HOJE_S, m.complexo?7:5);
+    prox.prazo = addDias(HOJE_S, slaAprov(m));
     enviarMail('submetido', m, prox.pessoa, {PRAZO: fmt(prox.prazo)});
-    toast('Aprovado. Encaminhado para '+pName(prox.pessoa)+' ('+prox.papel+')', 'ok');
+    toast(lote+'Encaminhado para '+pName(prox.pessoa)+' ('+prox.papel+')', 'ok');
   } else {
     m.status='aprovado';
     setTimeout(()=>{ m.status='execucao'; render(); }, 600);
-    toast('Última aprovação registrada — MOC liberado para execução', 'ok');
+    toast(lote+'Última aprovação registrada · MOC liberado para execução', 'ok');
   }
   closeModal(); render();
 }
@@ -1562,10 +1864,55 @@ function encerrar(id){
   const m = byId(id);
   const ab = acoesAbertas(m).length;
   if(ab){ toast('Não é possível encerrar: '+ab+' ação(ões) em aberto', 'bad'); return; }
+  if(m.tipo==='Temporário' && !m.desfecho){
+    modal('Encerrar MOC Temporário — '+m.id,
+      '<div class="note">Ao final do período, o MOC Temporário deve ser <b>revertido à condição original</b> ou <b>convertido em permanente</b>. Registre o desfecho para encerrar.</div>'+
+      '<label class="chk-row"><input type="radio" name="desf" value="revertido"> Revertido à condição original</label>'+
+      '<label class="chk-row"><input type="radio" name="desf" value="convertido"> Convertido em permanente</label>'+
+      '<div class="tiny" style="margin-top:8px">A confirmar com SHE: como a conversão é formalizada (novo MOC Permanente ou alteração do próprio MOC).</div>'+
+      '<div id="desfErr"></div>',
+      '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="confirmaDesfecho(\''+id+'\')">Encerrar MOC</button>');
+    return;
+  }
+  fechaMOC(m);
+}
+function confirmaDesfecho(id){
+  const r = document.querySelector('input[name=desf]:checked');
+  if(!r){ el('desfErr').innerHTML='<div class="err-msg">Escolha o desfecho do temporário.</div>'; return; }
+  const m = byId(id); m.desfecho = r.value;
+  closeModal(); fechaMOC(m);
+}
+function fechaMOC(m){
   m.status='concluido'; m.concluido=HOJE_S;
   enviarMail('finalizado', m, m.solicitante, {});
   m.aprovacoes.forEach(a=>enviarMail('finalizado', m, a.pessoa, {}));
-  toast('MOC '+m.id+' encerrado com sucesso', 'ok'); render();
+  toast('MOC '+m.id+' encerrado'+(m.desfecho?' · '+(m.desfecho==='convertido'?'convertido em permanente':'revertido à condição original'):''), 'ok');
+  render();
+}
+
+/* reavaliação de prazo: até o limite máximo (180 dias) contado do início / implementação */
+function reavaliar(id){
+  const m = byId(id);
+  const limite = addDias(m.dtIni, limMax());
+  modal('Reavaliar prazo — '+m.id,
+    '<div class="note">MOC '+m.tipo+': '+(m.tipo==='Temporário'?'período inicial de até '+limTemp()+' dias, ':'')+
+      'reavaliação até o limite máximo de <b>'+limMax()+' dias</b> a partir de '+(isEmerg(m.tipo)?'quando foi implementada':'o início')+' ('+fmt(m.dtIni)+').</div>'+
+    '<dl class="kv" style="margin-bottom:12px"><dt>Conclusão atual</dt><dd>'+fmt(m.dtFim)+'</dd><dt>Limite máximo</dt><dd>'+fmt(limite)+'</dd></dl>'+
+    '<div class="fld"><label class="fld-l">Nova data de conclusão *</label><input type="date" id="rvD" value="'+m.dtFim+'" max="'+limite+'"></div>'+
+    '<div class="fld"><label class="fld-l">Motivo da reavaliação</label><textarea id="rvO" placeholder="Por que o prazo precisa mudar..."></textarea></div>'+
+    '<div id="rvErr"></div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="salvaReavaliacao(\''+id+'\')">Registrar reavaliação</button>');
+}
+function salvaReavaliacao(id){
+  const m = byId(id), d = el('rvD').value, limite = addDias(m.dtIni, limMax());
+  const err = msg => { el('rvErr').innerHTML='<div class="err-msg">'+msg+'</div>'; };
+  if(!d) return err('Informe a nova data.');
+  if(d===m.dtFim) return err('A nova data é igual à atual.');
+  if(diffDias(m.dtIni,d)<=0) return err('A conclusão deve ser posterior ao início.');
+  if(diffDias(limite,d)>0) return err('Passa do limite máximo de '+limMax()+' dias ('+fmt(limite)+').');
+  (m.reavaliacoes = m.reavaliacoes||[]).push({de:m.dtFim, para:d, em:HOJE_S, por:USER, obs:el('rvO').value.trim()});
+  m.dtFim = d;
+  closeModal(); toast('Prazo reavaliado para '+fmt(d), 'ok'); render();
 }
 
 function concluirAcao(mid, aid){
@@ -1601,45 +1948,61 @@ const exportar = o => toast('Protótipo: exportação de '+o+' para Excel — a 
 /* ============================================================
    WIZARD — 6 ETAPAS
    ============================================================ */
-const PASSOS = ['Tipo de MOC','Informações iniciais','Avaliação de impacto','Gestão de ações','Aprovadores','Revisão e submissão'];
+/* Ordem do documento da área de SHE: 1. tipo de MOC → 2. Simples ou Complexo → demais etapas */
+const PASSOS = ['Tipo de MOC','Simples ou Complexo','Informações iniciais','Avaliação de impacto','Gestão de ações','Revisores e aprovadores','Revisão e submissão'];
+const W_TIPO=0, W_TRI=1, W_INFO=2, W_IMP=3, W_ACO=4, W_APR=5, W_REV=6;
 
 function novoMOC(){
   if(ROLE==='viewer'){ toast('Perfil Visualizador não cria MOC (somente leitura)', 'bad'); return; }
-  WIZ = {passo:0, tipo:null, titulo:'', desc:'', just:'', she:'', tipoAlt:'', impacto:'', site:'Pouso Alegre',
-         area:'', participantes:[USER], responsavel:USER, dtIni:addDias(HOJE_S,10), dtFim:addDias(HOJE_S,70),
-         av:{}, acoes:[], erros:{}, confirm:false};
+  WIZ = {passo:0, tipo:null, tri:{}, titulo:'', desc:'', just:'', she:'', tipoAlt:'', impacto:'', site:'Pouso Alegre',
+         area:'', equip:'', participantes:[USER], responsavel:USER, dtIni:addDias(HOJE_S,10), dtFim:addDias(HOJE_S,70),
+         av:{}, acoes:[], papeis:null, aprovadores:null, erros:{}, confirm:false};
   switchView('novo');
 }
 function wizGo(n){
-  if(n > WIZ.passo && !validaPasso(WIZ.passo)) { render(); return; }
-  if(n===3) gerarAcoes();
+  if(n > WIZ.passo){ for(let p=WIZ.passo;p<n;p++){ if(!validaPasso(p)){ render(); return; } } }
+  if(n===W_ACO) gerarAcoes();
+  if(n>=W_APR) initPapeis();
   WIZ.passo = n; render(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function validaPasso(p){
   WIZ.erros = {};
-  if(p===0 && !WIZ.tipo){ toast('Selecione o tipo de MOC', 'bad'); return false; }
-  if(p===1){
+  if(p===W_TIPO && !WIZ.tipo){ toast('Selecione o tipo de MOC', 'bad'); return false; }
+  if(p===W_TRI && !classificar(WIZ.tri).definido){ toast('Responda a triagem para classificar o MOC', 'bad'); return false; }
+  if(p===W_INFO){
     ['titulo','desc','just','tipoAlt','impacto','area'].forEach(k=>{ if(!WIZ[k]) WIZ.erros[k]='Campo obrigatório'; });
     if(!WIZ.participantes.length) WIZ.erros.participantes='Selecione ao menos 1 participante';
-    if(WIZ.dtIni && WIZ.dtFim && diffDias(WIZ.dtIni,WIZ.dtFim)<=0) WIZ.erros.dtFim='A conclusão deve ser posterior ao início';
-    const janela = (SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias;
-    if(WIZ.dtIni && WIZ.dtFim && diffDias(WIZ.dtIni,WIZ.dtFim)>janela) WIZ.erros.dtFim='A janela do MOC excede o SLA de '+janela+' dias';
-    if(Object.keys(WIZ.erros).length){ toast('Preencha os campos obrigatórios', 'bad'); return false; }
+    const dur = WIZ.dtIni && WIZ.dtFim ? diffDias(WIZ.dtIni,WIZ.dtFim) : 0;
+    if(WIZ.dtIni && WIZ.dtFim && dur<=0) WIZ.erros.dtFim='A conclusão deve ser posterior ao início';
+    const lim = limiteInicial(WIZ.tipo);
+    if(dur>lim) WIZ.erros.dtFim = WIZ.tipo==='Temporário'
+      ? 'MOC Temporário: período inicial de até '+lim+' dias. Prorrogação só por reavaliação, até '+limMax()+' dias.'
+      : 'A conclusão não pode passar de '+lim+' dias do '+(isEmerg(WIZ.tipo)?'dia da implementação':'início')+'.';
+    if(isEmerg(WIZ.tipo) && WIZ.dtIni && diffDias(WIZ.dtIni,HOJE_S)<0) WIZ.erros.dtIni='No Emergencial a mudança já foi implementada: informe a data em que ocorreu.';
+    if(Object.keys(WIZ.erros).length){ toast('Confira os campos destacados', 'bad'); return false; }
   }
-  if(p===2){
+  if(p===W_IMP){
     const faltam = QUESTOES.filter(q=>!WIZ.av[q.id]).length;
-    if(faltam){ toast('Responda todas as '+QUESTOES.length+' questões — faltam '+faltam, 'bad'); return false; }
+    if(faltam){ toast('Responda todas as '+QUESTOES.length+' questões · faltam '+faltam, 'bad'); return false; }
   }
-  if(p===3){
+  if(p===W_ACO){
     const semResp = WIZ.acoes.filter(a=>!a.resp).length;
     if(semResp){ toast('Defina o responsável de todas as ações', 'bad'); return false; }
+  }
+  if(p===W_APR){
+    initPapeis();
+    const cx = classificar(WIZ.tri).complexo;
+    const revs = WIZ.papeis.map((pp,i)=>isRevisor(pp)?WIZ.aprovadores[i]:null).filter(x=>x!==null);
+    if(revs.length < minRev(cx)){ toast('MOC '+(cx?'complexo':'simples')+' exige no mínimo '+minRev(cx)+' revisor(es)', 'bad'); return false; }
+    if(WIZ.aprovadores.some(x=>!x)){ toast('Defina a pessoa de todos os níveis', 'bad'); return false; }
+    if(new Set(revs).size !== revs.length){ toast('Os revisores precisam ser pessoas diferentes', 'bad'); return false; }
   }
   return true;
 }
 
 function vWizard(){
   if(!WIZ) { novoMOC(); return ''; }
-  const body = [wzTipo, wzInfo, wzImpacto, wzAcoes, wzAprov, wzRevisao][WIZ.passo]();
+  const body = [wzTipo, wzTriagem, wzInfo, wzImpacto, wzAcoes, wzAprov, wzRevisao][WIZ.passo]();
   return '<div class="steps">'+PASSOS.map((p,i)=>
       '<div class="step'+(i===WIZ.passo?' on':'')+(i<WIZ.passo?' done':'')+'" onclick="'+(i<WIZ.passo?'wizGo('+i+')':'')+'">'+
       '<span class="n">'+(i<WIZ.passo?'✓':(i+1))+'</span>'+p+'</div>').join('')+'</div>'+
@@ -1647,32 +2010,73 @@ function vWizard(){
     '<div class="wiz-foot">'+
       (WIZ.passo>0?'<button class="btn ghost" onclick="wizGo('+(WIZ.passo-1)+')">← Voltar</button>':
                    '<button class="btn ghost" onclick="switchView(\'home\')">Cancelar</button>')+
-      (WIZ.passo<5?'<button class="btn ghost" onclick="salvarRascunho()">Salvar como rascunho</button>'+
+      (WIZ.passo<W_REV?'<button class="btn ghost" onclick="salvarRascunho()">Salvar como rascunho</button>'+
                    '<button class="btn" onclick="wizGo('+(WIZ.passo+1)+')">Próximo →</button>':'')+
     '</div>';
 }
 
+function selTipo(t){
+  WIZ.tipo = t; WIZ.papeis = null;
+  if(isEmerg(t)){ WIZ.dtIni = HOJE_S; WIZ.dtFim = addDias(HOJE_S,60); }
+  else if(diffDias(HOJE_S, WIZ.dtIni)<0){ WIZ.dtIni = addDias(HOJE_S,10); WIZ.dtFim = addDias(HOJE_S,70); }
+  render();
+}
 function wzTipo(){
+  const meta = WIZ.tipo ? TIPO_META[WIZ.tipo] : null;
   return '<div class="panel-head"><div><div class="section-title">Etapa 1 · Selecione o tipo de MOC</div>'+
-    '<div class="muted">A escolha define a régua de aprovadores padrão e o fluxo de etapas aplicado.</div></div></div>'+
+    '<div class="muted">Primeiro a classificação correta da mudança. O tipo define os prazos e a régua de aprovação.</div></div></div>'+
     '<div class="type-cards type-3">'+
       TIPOS.map(t=>{ const m=TIPO_META[t];
-        return '<div class="type-card'+(WIZ.tipo===t?' sel':'')+(m.emerg?' emerg':'')+'" onclick="WIZ.tipo=\''+t+'\';render()">'+
+        return '<div class="type-card'+(WIZ.tipo===t?' sel':'')+(m.emerg?' emerg':'')+'" onclick="selTipo(\''+t+'\')">'+
           '<div class="ic"><svg viewBox="0 0 24 24">'+(m.circle?'<circle cx="12" cy="12" r="10"/>':'')+'<path d="'+m.icon+'"/></svg></div>'+
           '<h4>MOC '+t+'</h4><p>'+m.desc+'</p>'+
-          (m.emerg?'<div class="emerg-tag">Fluxo retroativo — a mudança já ocorreu</div>':'')+'</div>';
+          (m.emerg?'<div class="emerg-tag">Mudança já implementada sem MOC</div>':'')+'</div>';
       }).join('')+
     '</div>'+
-    (isEmerg(WIZ.tipo) ? '<div class="note" style="border-left-color:var(--danger);background:var(--danger-soft);margin-top:14px"><b>MOC Emergencial:</b> use apenas quando a mudança já foi executada por urgência, sem MOC prévio. O sistema registra o ocorrido e conduz a ratificação, a análise e a aprovação de forma retroativa, preservando a rastreabilidade para auditoria.</div>' : '');
+    (meta ? '<div class="rules"><h5>Regras do MOC '+WIZ.tipo+'</h5><ul class="bul" style="margin-bottom:0">'+
+      meta.regras.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></div>' : '');
+}
+
+/* Etapa 2 · triagem em sequência: "Sim" avança, "Não" encerra como complexo */
+function triResp(id, r){
+  const i = TRIAGEM.findIndex(t=>t.id===id);
+  WIZ.tri[id] = r;
+  TRIAGEM.slice(i+1).forEach(t=>{ if(r==='nao') delete WIZ.tri[t.id]; });
+  WIZ.papeis = null;
+  render();
+}
+function wzTriagem(){
+  const c = classificar(WIZ.tri);
+  const ate = c.definido ? (c.complexo ? c.falhou : TRIAGEM.length-1) : c.pendente;
+  return '<div class="panel-head"><div><div class="section-title">Etapa 2 · O MOC é Simples ou Complexo?</div>'+
+    '<div class="muted">Três perguntas de análise, em sequência. Qualquer "Não" classifica o MOC como complexo.</div></div>'+
+    (c.definido?cxPill(c.complexo):'<span class="pill neutral">a classificar</span>')+'</div>'+
+    TRIAGEM.slice(0, ate+1).map((t,i)=>{
+      const r = WIZ.tri[t.id];
+      return '<div class="tri-q'+(r?' '+r:'')+'">'+
+        '<div class="q-top"><div class="q-txt"><span class="tri-n">'+(i+1)+'</span>'+esc(t.txt)+'</div>'+
+        '<div class="q-opts">'+
+          '<span class="q-opt'+(r==='sim'?' on-yes':'')+'" onclick="triResp(\''+t.id+'\',\'sim\')">Sim</span>'+
+          '<span class="q-opt'+(r==='nao'?' on-no':'')+'" onclick="triResp(\''+t.id+'\',\'nao\')">Não</span>'+
+        '</div></div>'+
+        '<div class="tri-hint">Sim → '+(i<TRIAGEM.length-1?'avançar':'MOC SIMPLES')+' · Não → MOC COMPLEXO</div>'+
+      '</div>';
+    }).join('')+
+    (c.definido ? '<div class="tri-res '+(c.complexo?'cx':'sp')+'"><h4>MOC '+(c.complexo?'COMPLEXO':'SIMPLES')+'</h4>'+
+      '<ul class="bul" style="margin-bottom:0">'+
+      (c.complexo
+        ? '<li>Mínimo de <b>'+REGRA.minRevComplexo+' revisores</b>.</li><li><b>Checklist de PSSR / revisão pós-inicialização</b> obrigatórios.</li><li>Avaliação de impacto obrigatória.</li>'
+        : '<li>Mínimo de <b>'+REGRA.minRevSimples+' revisor</b>.</li><li><b>Avaliação de impacto</b> obrigatória.</li>')+
+      '</ul></div>' : '');
 }
 
 function wzInfo(){
   const e = WIZ.erros;
   const ef = k => e[k]?'<div class="err-msg">'+e[k]+'</div>':'';
   const cl = k => e[k]?' class="err"':'';
-  return '<div class="panel-head"><div><div class="section-title">Etapa 2 · Informações iniciais</div>'+
-    '<div class="muted">Parte inicial do projeto — pessoas presentes, tipo de alteração, impacto e onde acontece.</div></div>'+
-    '<span class="pill info">MOC '+WIZ.tipo+'</span></div>'+
+  return '<div class="panel-head"><div><div class="section-title">Etapa 3 · Informações iniciais</div>'+
+    '<div class="muted">Parte inicial do projeto: pessoas presentes, tipo de alteração, impacto e onde acontece.</div></div>'+
+    '<span class="pill info">MOC '+WIZ.tipo+' · '+(classificar(WIZ.tri).complexo?'Complexo':'Simples')+'</span></div>'+
     '<div class="fld"><label class="fld-l">Título *</label><input type="text"'+cl('titulo')+' value="'+esc(WIZ.titulo)+'" oninput="WIZ.titulo=this.value" placeholder="Ex.: MOC - Novo Virador de Pets Pacific 2">'+ef('titulo')+'</div>'+
     '<div class="fld"><label class="fld-l">Descrição de alteração *</label><textarea'+cl('desc')+' oninput="WIZ.desc=this.value" placeholder="O que exatamente será alterado...">'+esc(WIZ.desc)+'</textarea>'+ef('desc')+'</div>'+
     '<div class="fld"><label class="fld-l">Justificação para alteração *</label><textarea'+cl('just')+' oninput="WIZ.just=this.value" placeholder="Por que a alteração é necessária e o que se espera dela...">'+esc(WIZ.just)+'</textarea>'+ef('just')+'</div>'+
@@ -1685,21 +2089,28 @@ function wzInfo(){
       '<div class="fld"><label class="fld-l">Unidade *</label><select onchange="WIZ.site=this.value;WIZ.area=\'\';render()">'+
         opt(SITES, WIZ.site)+'</select></div>'+
     '</div>'+
-    '<div class="grid3">'+
+    '<div class="grid2">'+
       '<div class="fld"><label class="fld-l">Onde acontece (área) *</label><select'+cl('area')+' onchange="WIZ.area=this.value">'+
         opt([''].concat(AREAS[WIZ.site]), WIZ.area, v=>v||'Selecione...')+'</select>'+ef('area')+'</div>'+
-      '<div class="fld"><label class="fld-l">Início planejado *</label><input type="date" value="'+WIZ.dtIni+'" onchange="WIZ.dtIni=this.value"></div>'+
+      '<div class="fld"><label class="fld-l">Equipamento / instalação</label><input type="text" value="'+esc(WIZ.equip)+'" oninput="WIZ.equip=this.value" placeholder="Ex.: Bomba P-310, Linha PET 2..."></div>'+
+    '</div>'+
+    '<div class="grid2">'+
+      '<div class="fld"><label class="fld-l">'+(isEmerg(WIZ.tipo)?'Data em que a mudança foi implementada *':'Início planejado *')+'</label>'+
+        '<input type="date"'+cl('dtIni')+' value="'+WIZ.dtIni+'" onchange="WIZ.dtIni=this.value;render()">'+ef('dtIni')+'</div>'+
       '<div class="fld"><label class="fld-l">Conclusão planejada *</label><input type="date"'+cl('dtFim')+' value="'+WIZ.dtFim+'" onchange="WIZ.dtFim=this.value;render()">'+ef('dtFim')+'</div>'+
     '</div>'+
     '<div class="grid2">'+
-      '<div class="fld"><label class="fld-l">Responsável pelo MOC *</label><select onchange="WIZ.responsavel=this.value">'+
+      '<div class="fld"><label class="fld-l">Coordenador do MOC *</label><select onchange="WIZ.responsavel=this.value">'+
         PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<option value="'+p.id+'"'+(p.id===WIZ.responsavel?' selected':'')+'>'+esc(p.nome)+' — '+esc(p.area)+'</option>').join('')+'</select></div>'+
       '<div class="fld"><label class="fld-l">Pessoas presentes / envolvidas *</label>'+
         '<div style="display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1.5px solid var(--line);border-radius:10px;min-height:42px">'+
         PEOPLE.filter(p=>p.id!=='tamires').map(p=>'<span class="pill '+(WIZ.participantes.includes(p.id)?'info':'neutral')+'" style="cursor:pointer" onclick="togPart(\''+p.id+'\')">'+
           (WIZ.participantes.includes(p.id)?'✓ ':'')+esc(p.nome)+'</span>').join('')+'</div>'+ef('participantes')+'</div>'+
     '</div>'+
-    '<div class="tiny">Janela do MOC: <b>'+(WIZ.dtIni&&WIZ.dtFim?diffDias(WIZ.dtIni,WIZ.dtFim)+' dias':'—')+'</b> · SLA máximo: '+(SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias</div>';
+    '<div class="tiny">Prazo do MOC: <b>'+(WIZ.dtIni&&WIZ.dtFim?diffDias(WIZ.dtIni,WIZ.dtFim)+' dias':'—')+'</b> · '+
+      (WIZ.tipo==='Temporário' ? 'período inicial até '+limTemp()+' dias; reavaliação até '+limMax()+' dias'
+                               : 'limite de '+limMax()+' dias, com reavaliação')+
+      (isEmerg(WIZ.tipo) && WIZ.dtIni ? ' · <b>formalização até '+fmt(prazoFormalizacao(WIZ.dtIni))+'</b> (próximo dia útil)' : '')+'</div>';
 }
 function togPart(id){
   const i = WIZ.participantes.indexOf(id);
@@ -1708,16 +2119,18 @@ function togPart(id){
 }
 
 function wzImpacto(){
-  const c = calcComplexidade(WIZ.av);
+  const c = resumoImpacto(WIZ.av);
+  const cx = classificar(WIZ.tri).complexo;
   const resp = QUESTOES.filter(q=>WIZ.av[q.id]).length;
-  return '<div class="panel-head"><div><div class="section-title">Etapa 3 · Avaliação de impacto</div>'+
-    '<div class="muted">Cada "Sim" gera automaticamente um item de ação. As respostas definem a complexidade do MOC.</div></div>'+
+  return '<div class="panel-head"><div><div class="section-title">Etapa 4 · Avaliação de impacto</div>'+
+    '<div class="muted">Obrigatória em todos os MOCs. Cada "Sim" gera automaticamente um item de ação.</div></div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
       '<span class="pill '+(resp===QUESTOES.length?'ok':'neutral')+'">'+resp+'/'+QUESTOES.length+' respondidas</span>'+
-      cxPill(c.complexo)+'</div></div>'+
-    '<div class="qual-note"><b>Bloco de Qualidade:</b> estas questões não existem no sistema global — foram removidas na última atualização. '+
+      cxPill(cx)+'</div></div>'+
+    ANS_KEY+
+    '<div class="qual-note"><b>Bloco de Qualidade:</b> estas questões não existem no sistema global, foram removidas na última atualização. '+
       'Elas são obrigatórias nesta unidade por causa das auditorias e são o motivo principal do sistema próprio. Uma resposta "Sim" em questão de qualidade '+
-      'gera ação com responsável da Qualidade e classifica o MOC como complexo.</div>'+
+      'gera ação com responsável da Qualidade.</div>'+
     DIMS.map(d=>{
       const qs = QUESTOES.filter(q=>q.dim===d.id);
       return '<div class="dim">'+
@@ -1726,11 +2139,12 @@ function wzImpacto(){
         qs.map(q=>{
           const a = WIZ.av[q.id];
           const sim = a && a.r==='sim';
-          return '<div class="q'+(sim?' yes':'')+(d.destaque?' q-qual':'')+'">'+
+          return '<div class="q'+(sim?' yes':'')+(a&&a.r==='na'?' na':'')+(d.destaque?' q-qual':'')+'">'+
             '<div class="q-top"><div class="q-txt">'+esc(q.txt)+(q.critica?' <span class="pill danger" style="font-size:9px">crítica</span>':'')+'</div>'+
             '<div class="q-opts">'+
               '<span class="q-opt'+(sim?' on-yes':'')+'" onclick="resp(\''+q.id+'\',\'sim\')">Sim</span>'+
               '<span class="q-opt'+(a&&a.r==='nao'?' on-no':'')+'" onclick="resp(\''+q.id+'\',\'nao\')">Não</span>'+
+              '<span class="q-opt'+(a&&a.r==='na'?' on-na':'')+'" onclick="resp(\''+q.id+'\',\'na\')">Não se aplica</span>'+
             '</div></div>'+
             (sim ? '<div class="q-gen">'+
               '<div class="fld"><label class="fld-l"><span class="auto-tag">ação gerada automaticamente</span></label>'+
@@ -1743,14 +2157,13 @@ function wzImpacto(){
           '</div>';
         }).join('')+'</div>';
     }).join('')+
-    '<div class="note" style="border-left-color:'+(c.complexo?'var(--danger)':'var(--ok)')+'"><b>Classificação automática: MOC '+(c.complexo?'COMPLEXO':'SIMPLES')+'</b><br>'+
-      esc(c.motivo)+' · '+c.sins+' impacto(s) → '+c.sins+' ação(ões) serão geradas · '+
-      (c.complexo?REGRA.complexoAprov:REGRA.simplesAprov)+' aprovadores exigidos.</div>';
+    '<div class="note" style="border-left-color:var(--brand)"><b>Resultado:</b> '+c.sins+' "Sim" → '+c.sins+' ação(ões) serão geradas · '+
+      c.na+' "Não se aplica". A classificação '+(cx?'COMPLEXO':'SIMPLES')+' veio da triagem (etapa 2).</div>';
 }
 function resp(qid, r){
   const q = qById(qid);
   if(r==='sim') WIZ.av[qid] = Object.assign({r:'sim', acao:q.acao, resp:q.resp, venc:addDias(HOJE_S,q.dias), obs:''}, WIZ.av[qid], {r:'sim'});
-  else WIZ.av[qid] = {r:'nao'};
+  else WIZ.av[qid] = {r:r};
   render();
 }
 
@@ -1763,8 +2176,8 @@ function gerarAcoes(){
 }
 
 function wzAcoes(){
-  const c = calcComplexidade(WIZ.av);
-  return '<div class="panel-head"><div><div class="section-title">Etapa 4 · Gestão de ações</div>'+
+  const c = classificar(WIZ.tri);
+  return '<div class="panel-head"><div><div class="section-title">Etapa 5 · Gestão de ações</div>'+
     '<div class="muted">Ações geradas pela avaliação de impacto. Revise responsáveis e prazos antes de submeter.</div></div>'+
     '<span class="pill '+(WIZ.acoes.length?'warn':'ok')+'">'+WIZ.acoes.length+' ação(ões)</span></div>'+
     (WIZ.acoes.length ? '<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>Origem</th><th>Responsável</th><th>Vencimento</th><th>Bloqueia início</th><th></th></tr></thead><tbody>'+
@@ -1787,51 +2200,83 @@ function wizAddAcao(){
   render();
 }
 
+/* régua do rascunho: parte do padrão (tipo × complexidade) e aceita revisores extras */
+function initPapeis(){
+  if(WIZ.papeis) return;
+  const cfg = cfgFor(WIZ.tipo, classificar(WIZ.tri).complexo);
+  WIZ.papeis = cfg.papeis.slice(); WIZ.aprovadores = cfg.pessoas.slice();
+}
+function renumRev(){ let k=0; WIZ.papeis = WIZ.papeis.map(p=>isRevisor(p)?P_REV+' '+(++k):p); }
+function addRevisor(){
+  let last = -1; WIZ.papeis.forEach((p,i)=>{ if(isRevisor(p)) last=i; });
+  WIZ.papeis.splice(last+1, 0, P_REV); WIZ.aprovadores.splice(last+1, 0, '');
+  renumRev(); render();
+}
+function remRevisor(i){ WIZ.papeis.splice(i,1); WIZ.aprovadores.splice(i,1); renumRev(); render(); }
+
 function wzAprov(){
-  const c = calcComplexidade(WIZ.av);
-  const cfg = cfgFor(WIZ.tipo, c.complexo);
-  if(!WIZ.aprovadores || WIZ.aprovadores.length!==cfg.papeis.length) WIZ.aprovadores = cfg.pessoas.slice();
-  return '<div class="panel-head"><div><div class="section-title">Etapa 5 · Aprovadores</div>'+
-    '<div class="muted">A régua é definida automaticamente pela avaliação de impacto.</div></div>'+cxPill(c.complexo)+'</div>'+
+  initPapeis();
+  const c = classificar(WIZ.tri);
+  const min = minRev(c.complexo);
+  const nRev = WIZ.papeis.filter(isRevisor).length;
+  return '<div class="panel-head"><div><div class="section-title">Etapa 6 · Revisores e aprovadores</div>'+
+    '<div class="muted">A régua padrão vem do tipo e da triagem. Você pode trocar pessoas e incluir revisores.</div></div>'+cxPill(c.complexo)+'</div>'+
     '<div class="note" style="border-left-color:'+(c.complexo?'var(--danger)':'var(--ok)')+'">'+
-      '<b>MOC '+(c.complexo?'complexo':'simples')+' → '+cfg.papeis.length+' aprovadores.</b><br>'+esc(c.motivo)+'.<br>'+
-      'MOCs simples exigem '+REGRA.simplesAprov+' aprovadores. MOCs complexos exigem '+REGRA.complexoAprov+', incluindo Qualidade e SHE.</div>'+
-    '<div style="margin-top:16px">'+cfg.papeis.map((p,i)=>
-      '<div style="display:grid;grid-template-columns:1fr 1.2fr;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px">'+
+      '<b>MOC '+(c.complexo?'complexo':'simples')+': mínimo de '+min+' revisor'+(min>1?'es':'')+' na Análise.</b> '+
+      (c.complexo?'PSSR / revisão pós-inicialização obrigatórios. ':'')+
+      (isEmerg(WIZ.tipo)?'Emergencial: segue o fluxo do Permanente e exige a aprovação escrita do Site Lead (ou substituto). ':'')+
+      'Hoje: '+nRev+' revisor(es).</div>'+
+    '<div style="margin-top:16px">'+WIZ.papeis.map((p,i)=>{
+      const rev = isRevisor(p);
+      return '<div style="display:grid;grid-template-columns:1fr 1.2fr auto;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;margin-bottom:9px">'+
         '<div><div style="font-weight:700;font-size:13.5px">'+esc(p)+'</div>'+
-        '<div class="tiny">Nível '+(i+1)+' · SLA de análise: '+(c.complexo?7:5)+' dias</div></div>'+
+        '<div class="tiny">Nível '+(i+1)+' · '+(p===P_SITE?'até o próximo dia útil após a implementação':'SLA de análise: '+slaAprov({complexo:c.complexo})+' dias')+'</div></div>'+
         '<select onchange="WIZ.aprovadores['+i+']=this.value;render()">'+
-          PEOPLE.filter(x=>x.id!=='tamires').map(x=>'<option value="'+x.id+'"'+(x.id===WIZ.aprovadores[i]?' selected':'')+'>'+esc(x.nome)+' — '+esc(x.area)+'</option>').join('')+
-        '</select></div>').join('')+'</div>'+
-    '<button class="btn ghost sm" onclick="WIZ.aprovadores=cfgFor(WIZ.tipo,calcComplexidade(WIZ.av).complexo).pessoas.slice();render();toast(\'Aprovadores padrão restaurados\')">Restaurar aprovadores padrão</button>';
+          (WIZ.aprovadores[i]?'':'<option value="" selected>Selecione...</option>')+
+          PEOPLE.filter(x=>x.id!=='tamires' && !x.inativo).map(x=>'<option value="'+x.id+'"'+(x.id===WIZ.aprovadores[i]?' selected':'')+'>'+esc(x.nome)+' — '+esc(x.area)+'</option>').join('')+
+        '</select>'+
+        (rev && nRev>min ? '<button class="btn ghost sm" onclick="remRevisor('+i+')">Remover</button>' : '<span></span>')+
+      '</div>';
+    }).join('')+'</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn ghost sm" onclick="addRevisor()">+ Adicionar revisor</button>'+
+      '<button class="btn ghost sm" onclick="WIZ.papeis=null;render();toast(\'Régua padrão restaurada\')">Restaurar régua padrão</button></div>';
 }
 
 function wzRevisao(){
-  const c = calcComplexidade(WIZ.av);
-  const cfg = cfgFor(WIZ.tipo, c.complexo);
-  return '<div class="panel-head"><div><div class="section-title">Etapa 6 · Revisão e submissão</div>'+
+  initPapeis();
+  const c = resumoImpacto(WIZ.av);
+  const cl = classificar(WIZ.tri);
+  return '<div class="panel-head"><div><div class="section-title">Etapa 7 · Revisão e submissão</div>'+
     '<div class="muted">Confira tudo antes de enviar. A submissão dispara e-mail para todos os aprovadores.</div></div></div>'+
-    '<div class="sec-h">Informações iniciais <button class="btn ghost sm" style="float:right" onclick="wizGo(1)">Editar</button></div>'+
+    '<div class="sec-h">Tipo e classificação <button class="btn ghost sm" style="float:right" onclick="wizGo('+W_TRI+')">Editar</button></div>'+
     '<dl class="kv"><dt>Tipo de MOC</dt><dd>'+WIZ.tipo+'</dd>'+
+      '<dt>Classificação</dt><dd>'+cxPill(cl.complexo)+' <span class="tiny">'+esc(cl.motivo)+'</span></dd></dl>'+
+    '<div class="sec-h">Informações iniciais <button class="btn ghost sm" style="float:right" onclick="wizGo('+W_INFO+')">Editar</button></div>'+
+    '<dl class="kv">'+
       '<dt>Título</dt><dd>'+esc(WIZ.titulo)+'</dd>'+
       '<dt>Tipo de alteração</dt><dd>'+esc(WIZ.tipoAlt)+'</dd>'+
       '<dt>Impacto associado</dt><dd>'+esc(WIZ.impacto)+'</dd>'+
       '<dt>Unidade / área</dt><dd>'+esc(WIZ.site)+' · '+esc(WIZ.area)+'</dd>'+
-      '<dt>Responsável</dt><dd>'+avatarChip(WIZ.responsavel)+'</dd>'+
+      (WIZ.equip?'<dt>Equipamento / instalação</dt><dd>'+esc(WIZ.equip)+'</dd>':'')+
+      '<dt>Coordenador do MOC</dt><dd>'+avatarChip(WIZ.responsavel)+'</dd>'+
       '<dt>Pessoas presentes</dt><dd>'+WIZ.participantes.map(p=>'<span class="pill neutral" style="margin:2px">'+esc(pName(p))+'</span>').join('')+'</dd>'+
-      '<dt>Janela</dt><dd>'+fmt(WIZ.dtIni)+' → '+fmt(WIZ.dtFim)+' ('+diffDias(WIZ.dtIni,WIZ.dtFim)+' dias)</dd></dl>'+
-    '<div class="sec-h">Avaliação de impacto <button class="btn ghost sm" style="float:right" onclick="wizGo(2)">Editar</button></div>'+
-    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+cxPill(c.complexo)+
-      '<span class="pill info">'+c.sins+' impactos</span>'+(c.criticas?'<span class="pill danger">'+c.criticas+' crítico(s)</span>':'')+
+      '<dt>Prazo</dt><dd>'+fmt(WIZ.dtIni)+' → '+fmt(WIZ.dtFim)+' ('+diffDias(WIZ.dtIni,WIZ.dtFim)+' dias)</dd>'+
+      (isEmerg(WIZ.tipo)?'<dt>Formalização</dt><dd>até '+fmt(prazoFormalizacao(WIZ.dtIni))+' (próximo dia útil)</dd>':'')+
+    '</dl>'+
+    '<div class="sec-h">Avaliação de impacto <button class="btn ghost sm" style="float:right" onclick="wizGo('+W_IMP+')">Editar</button></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'+
+      '<span class="pill info">'+c.sins+' impactos</span>'+(c.na?'<span class="pill neutral">'+c.na+' não se aplica</span>':'')+
+      (c.criticas?'<span class="pill danger">'+c.criticas+' crítico(s)</span>':'')+
       (c.qualidade?'<span class="pill qual">'+c.qualidade+' de Qualidade</span>':'')+'</div>'+
-    '<div class="sec-h">Ações geradas ('+WIZ.acoes.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo(3)">Editar</button></div>'+
+    '<div class="sec-h">Ações geradas ('+WIZ.acoes.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo('+W_ACO+')">Editar</button></div>'+
     (WIZ.acoes.length?'<div class="tbl-wrap"><table><thead><tr><th>Ação</th><th>Responsável</th><th>Vencimento</th></tr></thead><tbody>'+
       WIZ.acoes.map(a=>'<tr><td style="font-weight:600">'+esc(a.titulo)+'</td><td>'+esc(pName(a.resp))+'</td><td class="tiny">'+fmt(a.venc)+'</td></tr>').join('')+
       '</tbody></table></div>':'<div class="muted tiny">Nenhuma ação gerada.</div>')+
-    '<div class="sec-h">Aprovadores ('+cfg.papeis.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo(4)">Editar</button></div>'+
-    '<dl class="kv">'+cfg.papeis.map((p,i)=>'<dt>'+esc(p)+'</dt><dd>'+avatarChip(WIZ.aprovadores[i])+'</dd>').join('')+'</dl>'+
-    '<div class="note" style="margin-top:20px"><b>Ao submeter:</b> '+cfg.papeis.length+' e-mail(s) serão disparados aos aprovadores com o prazo de análise. '+
-      'Lembrete automático '+slaLembrete()+' dia(s) antes do vencimento.</div>'+
+    '<div class="sec-h">Revisores e aprovadores ('+WIZ.papeis.length+') <button class="btn ghost sm" style="float:right" onclick="wizGo('+W_APR+')">Editar</button></div>'+
+    '<dl class="kv">'+WIZ.papeis.map((p,i)=>'<dt>'+esc(p)+'</dt><dd>'+avatarChip(WIZ.aprovadores[i])+'</dd>').join('')+'</dl>'+
+    '<div class="note" style="margin-top:20px"><b>Ao submeter:</b> '+WIZ.papeis.length+' e-mail(s) serão disparados com o prazo de análise. '+
+      'Lembrete automático '+slaLembrete()+' dia(s) antes do vencimento. Depois de enviado, o MOC continua na sua tela, com a etapa e com quem está.</div>'+
     '<label style="display:flex;gap:10px;align-items:center;margin:16px 0;font-size:13.5px;font-weight:600;cursor:pointer">'+
       '<input type="checkbox" style="width:18px;height:18px" '+(WIZ.confirm?'checked':'')+' onchange="WIZ.confirm=this.checked;render()">'+
       'Confirmo que todas as informações estão corretas</label>'+
@@ -1841,19 +2286,19 @@ function wzRevisao(){
 }
 
 function materializa(status){
-  const c = calcComplexidade(WIZ.av);
-  const cfg = cfgFor(WIZ.tipo, c.complexo);
+  const c = classificar(WIZ.tri);
+  if(WIZ.tipo) initPapeis();
   const id = mocId(HOJE_S);
   const av = {}; QUESTOES.forEach(q=>{ av[q.id] = WIZ.av[q.id] || {r:'nao'}; });
   const m = {
     id, tipo:WIZ.tipo, status, titulo:WIZ.titulo, desc:WIZ.desc, justificativa:WIZ.just, impactoSHE:WIZ.she||'—',
-    tipoAlt:WIZ.tipoAlt, impacto:WIZ.impacto, site:WIZ.site, area:WIZ.area,
+    tipoAlt:WIZ.tipoAlt, impacto:WIZ.impacto, site:WIZ.site, area:WIZ.area, equip:WIZ.equip,
     solicitante:USER, responsavel:WIZ.responsavel, participantes:WIZ.participantes.slice(),
     criado:HOJE_S, dtIni:WIZ.dtIni, dtFim:WIZ.dtFim, concluido:null,
-    av, complexo:c.complexo,
+    av, tri:Object.assign({}, WIZ.tri), complexo:c.complexo,
     acoes: WIZ.acoes.map((a,i)=>({id:acId(id,123+i), qid:a.qid, titulo:a.titulo, desc:a.desc, resp:a.resp,
                                   venc:a.venc, status:'aberta', necessarioInicio:a.necessarioInicio, concluidaEm:null})),
-    aprovacoes: cfg.papeis.map((p,i)=>({papel:p, pessoa:(WIZ.aprovadores||cfg.pessoas)[i], status:'pendente'})),
+    aprovacoes: WIZ.papeis.map((p,i)=>({papel:p, pessoa:WIZ.aprovadores[i], status:'pendente'})),
     anexos:[],
   };
   MOCS.unshift(m);
@@ -1861,18 +2306,17 @@ function materializa(status){
 }
 function salvarRascunho(){
   if(!WIZ.titulo){ toast('Informe ao menos o título para salvar o rascunho', 'bad'); return; }
+  if(!classificar(WIZ.tri).definido){ toast('Conclua a triagem Simples × Complexo para salvar o rascunho', 'bad'); return; }
   if(!WIZ.tipo) WIZ.tipo='Permanente';
   gerarAcoes();
   const m = materializa('rascunho');
   WIZ = null; toast('Rascunho salvo — '+m.id, 'ok'); abrirMOC(m.id);
 }
 function submeterNovo(){
-  if(!validaPasso(1)||!validaPasso(2)) return;
+  if(![W_TRI, W_INFO, W_IMP, W_APR].every(validaPasso)) { render(); return; }
   const m = materializa('conceito');
-  const sla = m.complexo ? 7 : 5;
-  m.aprovacoes[0].prazo = addDias(HOJE_S, sla);
-  if(m.aprovacoes[1]) m.aprovacoes[1].prazo = addDias(HOJE_S, sla+2);
-  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,sla+4))}));
+  prazosIniciais(m);
+  m.aprovacoes.forEach(a=>enviarMail('submetido', m, a.pessoa, {PRAZO: fmt(a.prazo||addDias(HOJE_S,slaAprov(m)+4))}));
   WIZ = null;
   modal('MOC submetido com sucesso',
     '<div style="text-align:center;padding:10px 0 4px">'+
@@ -2229,19 +2673,23 @@ function soAdmin(){
 /* ---------------- questionário ---------------- */
 function vCfgQuest(){
   if(ROLE!=='admin') return soAdmin();
-  return '<div class="note"><b>O coração do sistema.</b> Cada questão respondida com "Sim" gera um item de ação com responsável e prazo padrão. '+
-    'Questões marcadas como <b>críticas</b> classificam o MOC como complexo sozinhas. '+
-    'A lista definitiva de perguntas será consolidada pela área de negócio — este cadastro permite ajustar sem depender de desenvolvimento.</div>'+
+  return '<div class="card pad" style="margin-bottom:16px">'+
+      '<div class="panel-head"><div class="section-title">Triagem · MOC Simples ou Complexo</div><span class="tiny">definida pela área de SHE</span></div>'+
+      '<div class="note" style="margin-top:0">Três perguntas em sequência. "Sim" avança; qualquer "Não" classifica o MOC como <b>complexo</b>. Três "Sim" mantêm o MOC <b>simples</b>.</div>'+
+      TRIAGEM.map((t,i)=>'<div class="tri-q"><div class="q-txt"><span class="tri-n">'+(i+1)+'</span>'+esc(t.txt)+'</div>'+
+        '<div class="tri-hint">Sim → '+(i<TRIAGEM.length-1?'avançar':'MOC SIMPLES')+' · Não → MOC COMPLEXO</div></div>').join('')+
+      '<div class="filters" style="margin:12px 0 0;box-shadow:none"><span class="lb">Mínimo de revisores</span>'+
+        '<span class="tiny">simples</span>'+
+        '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.minRevSimples+'" onchange="REGRA.minRevSimples=+this.value;render()">'+
+        '<span class="tiny">complexo</span>'+
+        '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.minRevComplexo+'" onchange="REGRA.minRevComplexo=+this.value;render()">'+
+      '</div>'+
+    '</div>'+
+    '<div class="note"><b>Avaliação de impacto, o coração do sistema.</b> Cada questão respondida com "Sim" gera um item de ação com responsável e prazo padrão. '+
+    'As respostas possíveis são Sim, Não e Não se aplica. Questões <b>críticas</b> geram ação que bloqueia o início da implementação. '+
+    'A lista definitiva de perguntas será enviada pela área de SHE; este cadastro permite ajustar sem depender de desenvolvimento.</div>'+
     '<div class="qual-note"><b>Bloco de Qualidade ('+QUESTOES.filter(q=>q.dim==='qual').length+' questões):</b> é a lacuna que motivou o projeto. '+
     'O sistema global removeu as perguntas de qualidade; aqui elas são cadastráveis e obrigatórias.</div>'+
-    '<div class="filters"><span class="lb">Regra de complexidade</span>'+
-      '<span class="tiny">Gatilho de "Sim" para virar complexo:</span>'+
-      '<input type="number" min="1" max="10" style="width:70px" value="'+REGRA.gatilhoSins+'" onchange="REGRA.gatilhoSins=+this.value;toast(\'Regra atualizada — MOCs serão reclassificados\');render()">'+
-      '<span class="tiny">· Aprovadores: simples</span>'+
-      '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.simplesAprov+'" onchange="REGRA.simplesAprov=+this.value;render()">'+
-      '<span class="tiny">complexo</span>'+
-      '<input type="number" min="1" max="9" style="width:60px" value="'+REGRA.complexoAprov+'" onchange="REGRA.complexoAprov=+this.value;render()">'+
-    '</div>'+
     DIMS.map(d=>{
       const qs = QUESTOES.filter(q=>q.dim===d.id);
       return '<div class="card pad" style="margin-bottom:14px'+(d.destaque?';border-color:#ddd0fa':'')+'">'+
@@ -2262,16 +2710,17 @@ function vCfgQuest(){
 function vCfgAprov(){
   if(ROLE!=='admin') return soAdmin();
   return '<div class="note"><b>Régua de aprovação.</b> Define quem aprova cada combinação de tipo × complexidade. '+
-    'Ao submeter um MOC, o sistema pré-preenche os aprovadores conforme esta tabela — o solicitante pode ajustar antes de enviar.</div>'+
+    'Ao submeter um MOC, o sistema pré-preenche a régua conforme esta tabela; o iniciador pode trocar pessoas e incluir revisores antes de enviar. '+
+    'Simples: mínimo de '+REGRA.minRevSimples+' revisor. Complexo: mínimo de '+REGRA.minRevComplexo+' revisores e PSSR. Emergencial: fluxo do Permanente mais a aprovação escrita do Site Lead.</div>'+
     CFG_APROV.map((c,ci)=>'<div class="card pad" style="margin-bottom:14px">'+
       '<div class="panel-head"><div class="section-title">MOC '+c.tipo+' · '+c.complexidade+
-        ' <span class="pill '+(c.complexidade==='Complexo'?'danger':'ok')+'">'+c.papeis.length+' aprovadores</span></div></div>'+
+        ' <span class="pill '+(c.complexidade==='Complexo'?'danger':'ok')+'">'+c.papeis.length+' níveis · '+c.papeis.filter(isRevisor).length+' revisor(es)</span></div></div>'+
       '<div class="tbl-wrap"><table><thead><tr><th>Nível</th><th>Papel</th><th>Aprovador padrão</th><th>Área</th><th>SLA</th></tr></thead><tbody>'+
       c.papeis.map((p,i)=>'<tr><td><b>'+(i+1)+'</b></td><td style="font-weight:600">'+esc(p)+'</td>'+
         '<td><select onchange="CFG_APROV['+ci+'].pessoas['+i+']=this.value;toast(\'Aprovador padrão atualizado\')">'+
           PEOPLE.filter(x=>x.id!=='tamires').map(x=>'<option value="'+x.id+'"'+(x.id===c.pessoas[i]?' selected':'')+'>'+esc(x.nome)+'</option>').join('')+
         '</select></td><td class="tiny">'+esc(pArea(c.pessoas[i]))+'</td>'+
-        '<td class="tiny">'+(c.complexidade==='Complexo'?7:5)+' dias</td></tr>').join('')+
+        '<td class="tiny">'+(p===P_SITE?'próximo dia útil':slaAprov({complexo:c.complexidade==='Complexo'})+' dias')+'</td></tr>').join('')+
       '</tbody></table></div></div>').join('');
 }
 
@@ -2279,22 +2728,24 @@ function vCfgAprov(){
 function vCfgSla(){
   if(ROLE!=='admin') return soAdmin();
   return '<div class="note"><b>Prazos do processo.</b> Controlam o que o painel marca como atraso e quando o lembrete automático dispara. '+
-    'Os valores abaixo são uma proposta — a área de negócio ainda vai definir os números oficiais.</div>'+
+    'Os prazos por tipo de MOC (90, 180 dias e próximo dia útil) vêm do documento da área de SHE; os demais ainda são proposta.</div>'+
     '<div class="card pad">'+
-    '<div class="tbl-wrap"><table><thead><tr><th>Etapa / processo</th><th>Aplica-se a</th><th>Prazo (dias)</th><th>Efeito</th></tr></thead><tbody>'+
+    '<div class="tbl-wrap"><table><thead><tr><th>Etapa / processo</th><th>Aplica-se a</th><th>Prazo</th><th>Efeito</th></tr></thead><tbody>'+
     SLAS.map((s,i)=>'<tr><td style="font-weight:600">'+esc(s.etapa)+'</td>'+
-      '<td><span class="pill '+(s.tipo==='Complexo'?'danger':s.tipo==='Simples'?'ok':'neutral')+'">'+s.tipo+'</span></td>'+
-      '<td><input type="number" min="1" style="width:80px" value="'+s.dias+'" onchange="SLAS['+i+'].dias=+this.value;toast(\'SLA atualizado\');render()"></td>'+
+      '<td><span class="pill '+(s.tipo==='Complexo'||s.tipo==='Emergencial'?'danger':s.tipo==='Simples'?'ok':'neutral')+'">'+s.tipo+'</span></td>'+
+      '<td style="white-space:nowrap"><input type="number" min="1" style="width:80px" value="'+s.dias+'" onchange="SLAS['+i+'].dias=+this.value;toast(\'SLA atualizado\');render()"> <span class="tiny">'+(s.util?'dia(s) útil(eis)':'dias')+'</span></td>'+
       '<td class="tiny">'+esc(slaEfeito(s.etapa))+'</td></tr>').join('')+
     '</tbody></table></div>'+
     '<div class="note" style="margin-top:16px;border-left-color:var(--warn);background:var(--warn-soft)">'+
-      '<b>Janela do MOC:</b> o sistema bloqueia a criação de MOC cuja janela planejada exceda '+
-      (SLAS.find(s=>s.etapa.indexOf('Janela')===0)||{dias:90}).dias+' dias — a regra citada na reunião ("se o projeto é de três meses, tem que iniciar e terminar dentro dos três meses").</div>'+
+      '<b>Prazos por tipo:</b> o Temporário nasce com até '+limTemp()+' dias. Permanente e Temporário podem ser reavaliados até o limite máximo de '+limMax()+' dias '+
+      '("o MOC tem validade de 180 dias para implementação"). O Emergencial segue o Permanente e deve ser formalizado até o próximo dia útil.</div>'+
     '</div>';
 }
 function slaEfeito(e){
   if(e.indexOf('Lembrete')===0) return 'Dispara e-mail de lembrete automático antes do vencimento';
-  if(e.indexOf('Janela')===0) return 'Bloqueia a criação do MOC e marca atraso no painel';
+  if(e.indexOf('Período inicial')===0) return 'Bloqueia a criação de Temporário com prazo maior; acima disso só por reavaliação';
+  if(e.indexOf('Limite máximo')===0) return 'Teto da data de conclusão, inclusive nas reavaliações';
+  if(e.indexOf('Formalização')===0) return 'Prazo da aprovação escrita do Site Lead após a implementação';
   if(e.indexOf('Aprovação')===0) return 'Define o prazo do aprovador e o sinal de vencido no painel';
   if(e.indexOf('Conclusão')===0) return 'Vencimento padrão das ações geradas automaticamente';
   return 'Monitorado no painel analítico';
@@ -2309,7 +2760,8 @@ function vUsers(){
     'que eu possa mexer no sistema pra fazer os ajustes". Inclui o perfil <b>Visualizador</b> (somente leitura) — que na reunião foi solicitado para a Tamires.</div>'+
     '<div class="filters"><span class="lb">Buscar</span>'+
       '<input type="text" style="width:240px" placeholder="Nome, e-mail ou área" value="'+esc(fUser)+'" oninput="fUser=this.value;clearTimeout(window._fu);window._fu=setTimeout(render,250)">'+
-      '<div class="spacer"></div><button class="btn sm" onclick="addUser()">+ Adicionar usuário</button></div>'+
+      '<div class="spacer"></div><button class="btn ghost sm" onclick="importUsers()">Importar lista do RH</button>'+
+      '<button class="btn sm" onclick="addUser()">+ Adicionar usuário</button></div>'+
     '<div class="card"><div class="tbl-wrap"><table><thead><tr>'+
       '<th>Nome</th><th>E-mail</th><th>Área</th><th>Unidade</th><th>Nível de acesso</th><th>Status</th><th></th></tr></thead><tbody>'+
       list.map((p,i)=>'<tr>'+
@@ -2358,6 +2810,34 @@ function addUser(){
     '<div id="nuErr"></div>',
     '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="salvaUser()">Adicionar</button>');
 }
+/* carga em lote: a API corporativa é bloqueada, a lista vem do RH (call 21/10/2026) */
+function importUsers(){
+  modal('Importar lista de usuários do RH',
+    '<div class="note">A API corporativa é bloqueada, então a carga de usuários é feita pela lista exportada do RH. '+
+      'Cole as linhas abaixo, uma pessoa por linha, com as colunas <b>nome; e-mail; área; unidade; perfil</b>. '+
+      'O perfil é opcional (padrão: Solicitante). E-mails que já existem são ignorados.</div>'+
+    '<div class="fld"><label class="fld-l">Linhas da planilha</label>'+
+      '<textarea id="impTxt" style="min-height:150px;font-family:\'IBM Plex Mono\',monospace;font-size:12px" placeholder="Maria Souza; maria.souza@empresa.com; Produção; Pouso Alegre; Aprovador&#10;José Lima; jose.lima@empresa.com; Manutenção; Pouso Alegre"></textarea></div>'+
+    '<div id="impErr"></div>',
+    '<button class="btn ghost" onclick="closeModal()">Cancelar</button><button class="btn" onclick="salvaImport()">Importar</button>');
+}
+function salvaImport(){
+  const perfis = ['Administrador Master','Aprovador','Solicitante','Visualizador'];
+  const linhas = el('impTxt').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let ok=0, dup=0, inv=0;
+  linhas.forEach((l,i)=>{
+    const c = l.split(/[;\t]/).map(x=>x.trim());
+    if(c.length<2 || !c[0] || c[1].indexOf('@')<0){ inv++; return; }
+    if(PEOPLE.some(p=>p.email.toLowerCase()===c[1].toLowerCase())){ dup++; return; }
+    PEOPLE.push({id:'imp'+Date.now()+'_'+i, nome:c[0], email:c[1], area:c[2]||'—',
+                 site:SITES.includes(c[3])?c[3]:SITES[0], papel:perfis.includes(c[4])?c[4]:'Solicitante'});
+    ok++;
+  });
+  if(!ok){ el('impErr').innerHTML='<div class="err-msg">Nenhuma pessoa nova importada'+(dup?' ('+dup+' já existiam)':'')+(inv?' · '+inv+' linha(s) sem nome ou e-mail válido. Use ";" entre as colunas.':'')+'</div>'; return; }
+  closeModal();
+  toast(ok+' usuário(s) importado(s)'+(dup?' · '+dup+' já existiam':'')+(inv?' · '+inv+' linha(s) inválida(s)':''), 'ok');
+  render();
+}
 function salvaUser(){
   const n = el('nuN').value.trim(), e = el('nuE').value.trim();
   if(!n||!e){ el('nuErr').innerHTML='<div class="err-msg">Nome e e-mail são obrigatórios.</div>'; return; }
@@ -2373,37 +2853,43 @@ const HELP = [
   ['Por que um sistema próprio, se já existe o MOC global?','Dois motivos levantados na reunião. Primeiro: o sistema global (VelocityEHS) removeu as perguntas de qualidade na última atualização, e a unidade precisa delas por causa das auditorias. Segundo: com a venda da divisão de alimentos, a unidade deixa de ser Unilever e perde o acesso ao sistema global — precisa de plataforma independente antes disso acontecer.'],
   ['Como testo os diferentes perfis?','Use o seletor no canto superior direito. <b>Admin Master</b> (Vânia) vê tudo e configura o sistema; <b>Solicitante</b> (Leonardo) cria MOCs; <b>Aprovador</b> (Ana, da Qualidade) tem fila de aprovação; <b>Visualizador</b> (Tamires) é somente leitura — os botões de escrita desaparecem.'],
   ['Como funciona a geração automática de ações?','Na etapa 3 do fluxo (Avaliação de impacto), cada resposta "Sim" gera imediatamente um item de ação com título, responsável e prazo padrão — todos editáveis. Exemplo citado na reunião: "vou quebrar uma parede, então vou precisar de uma caçamba, então abro uma ação pra alguém ficar responsável por esse material."'],
-  ['Como o sistema decide se o MOC é simples ou complexo?','Pela avaliação de impacto. Se houver 4 ou mais respostas "Sim", ou qualquer "Sim" em questão marcada como <b>crítica</b>, o MOC vira complexo. Simples exige 3 aprovadores; complexo exige 5, incluindo Qualidade e SHE. O gatilho é configurável em Configuração → Questionário de Impacto.'],
+  ['Como o sistema decide se o MOC é simples ou complexo?','Pela <b>triagem</b> definida pela área de SHE, logo depois da escolha do tipo. São três perguntas em sequência: se a mudança mantém os controles atuais, se mantém as condições críticas do processo e se todos os riscos são conhecidos e controláveis sem avaliação multidisciplinar. Qualquer "Não" classifica como <b>complexo</b> (mínimo de 2 revisores e PSSR / revisão pós-inicialização). Três "Sim" mantêm <b>simples</b> (mínimo de 1 revisor). A avaliação de impacto é obrigatória nos dois casos.'],
+  ['O que significa "Não se aplica"?','Pedido da call de 21/10/2026. <b>Sim</b>: há impacto e o sistema gera uma ação. <b>Não</b>: o item já tem a tratativa, sem ação nova. <b>Não se aplica</b>: o item não existe nesta mudança.'],
+  ['O MOC some da minha tela depois que eu envio?','Não. Era a principal queixa do sistema atual. Aqui o dono do MOC e todos que participam dele (inclusive quem já aprovou) continuam vendo o MOC até o fim, com a etapa atual, com quem ele está e há quantos dias. Veja o quadro "Onde estão os meus MOCs" no Início e a coluna "Com quem está agora" na lista.'],
+  ['Preciso aceitar a mesma coisa várias vezes?','Não. Quando a mesma pessoa responde por níveis seguidos do mesmo MOC, a tela de aprovação lista esses níveis e permite aprovar todos de uma vez, mantendo a ordem.'],
   ['Por que o MOC não deixa encerrar?','Regra da reunião: MOC com ação em aberto não é finalizado. O botão "Encerrar MOC" só libera quando todas as ações estiverem concluídas. Ações marcadas como "necessário para iniciar procedimento" também bloqueiam o início da execução.'],
   ['O que muda nos e-mails em relação ao sistema atual?','Hoje o aprovador recebe o e-mail uma vez e nunca mais é cobrado — foi a queixa literal da Vânia ("recebi e não recebo mais"). Aqui existe lembrete automático disparado antes do vencimento e repetido até a decisão. Veja em Módulo 1 → Notificações de E-mail.'],
   ['O painel é uma ferramenta separada?','Não. A Vânia pediu que o BI estivesse dentro do próprio sistema, atualizando sozinho conforme as pessoas preenchem. O Módulo 2 lê os mesmos dados do Módulo 1 — sem exportação, sem ferramenta externa, sem atualização manual.'],
   ['De onde vêm os números do painel?','De uma base fictícia de MOCs desde 2020 (o histórico que a Vânia mostrou no BI dela), somada aos MOCs detalhados que você navega no Módulo 1. Criar ou aprovar um MOC altera o painel na hora.'],
   ['As perguntas do questionário são as definitivas?','Não. A lista definitiva ficou como ponto de ação da área de negócio ("vou te mandar as perguntas, todo o processo, todo o passo a passo"). As 17 questões aqui são uma proposta baseada no que foi descrito, com ênfase no bloco de Qualidade. O cadastro permite alterar sem desenvolvimento.'],
-  ['Os SLAs estão corretos?','São propostas. Os prazos oficiais ainda serão definidos pela área de negócio. A regra da janela de 90 dias reflete o exemplo dado na reunião: "se o meu projeto é de três meses, ele tem que estar iniciado antes dos três meses e terminar antes dos três meses".'],
+  ['Quais são os prazos de cada tipo de MOC?','Definidos pela área de SHE. <b>Temporário</b>: período inicial de até 90 dias, reavaliação até 180 dias e, no fim, reverter à condição original ou converter em permanente. <b>Permanente</b>: reavaliação até o limite de 180 dias. <b>Emergencial</b>: segue o Permanente, exige aprovação escrita do Site Lead e deve ser formalizado até o próximo dia útil. Os demais SLAs (prazo de cada aprovador, lembrete) ainda são proposta.'],
   ['Isso vai ser Power Apps ou web?','A decisão está em aberto — a proposta cobre as duas frentes. Na reunião a inclinação foi por web ("muito provavelmente a gente vai partir pra versão web, porque a gente não sabe nem se vai manter os Power Apps que são dependentes da Unilever"). Este protótipo é web e serve de referência visual para qualquer das duas.'],
 ];
 function vAjuda(){
-  return '<div class="note"><b>Protótipo navegável · v1.0</b> — construído sobre a reunião de requisitos de 15/07/2026. '+
+  return '<div class="note"><b>Protótipo navegável · v1.2</b> — construído sobre a reunião de requisitos de 15/07/2026 e revisado com a call de 21/10/2026 e os documentos de tipo e triagem da área de SHE. '+
     'Dados fictícios; nada é persistido. Use o <b>Tour</b> no topo para uma visita guiada.</div>'+
     '<div class="grid2" style="align-items:start">'+
       '<div>'+HELP.map(h=>'<details class="help-q"><summary>'+esc(h[0])+'</summary><div class="a">'+h[1]+'</div></details>').join('')+'</div>'+
       '<div class="card pad">'+
         '<div class="section-title" style="margin-bottom:12px">Cobertura do protótipo</div>'+
         '<div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>'+
-        [['Login e perfis de acesso','ok'],['Fluxo de criação em 6 etapas','ok'],['Avaliação de impacto + geração de ações','ok'],
-         ['Bloco de Qualidade (lacuna do global)','ok'],['Régua simples × complexo','ok'],['Fluxo de aprovação multinível','ok'],
+        [['Login e perfis de acesso','ok'],['Fluxo de criação em 7 etapas','ok'],['Triagem Simples × Complexo (3 perguntas)','ok'],
+         ['Avaliação de impacto + geração de ações','ok'],['Resposta "Não se aplica"','ok'],
+         ['Bloco de Qualidade (lacuna do global)','ok'],['Revisores mínimos (1 simples · 2 complexo)','ok'],['Fluxo de aprovação multinível','ok'],
+         ['Aceite em lote de níveis seguidos','ok'],['Acompanhamento: com quem está o MOC','ok'],['Prazos por tipo (90 / 180 dias)','ok'],
+         ['Reavaliação de prazo','ok'],['Desfecho do Temporário','ok'],['Emergencial: Site Lead + próximo dia útil','ok'],
          ['Bloqueio por ação em aberto','ok'],['Notificações e lembrete automático','ok'],['Trilha de auditoria','ok'],
-         ['Painel analítico (7 seções)','ok'],['Administração de usuários','ok'],['Configuração de questionário/SLA/aprovadores','ok'],
+         ['Painel analítico (7 seções)','ok'],['Administração e importação de usuários','ok'],['Configuração de questionário/SLA/aprovadores','ok'],
          ['Responsividade mobile','ok'],['Persistência em banco','pend'],['Envio real de e-mail','pend'],['Upload de anexo','pend']]
         .map(r=>'<tr><td>'+r[0]+'</td><td>'+(r[1]==='ok'?'<span class="pill ok">no protótipo</span>':'<span class="pill neutral">no desenvolvimento</span>')+'</td></tr>').join('')+
         '</tbody></table></div>'+
         '<div class="section-title" style="margin:18px 0 10px">Pontos ainda em aberto</div>'+
         '<ul class="bul">'+
-          '<li><b>Lista definitiva de perguntas</b> da avaliação de impacto — área de negócio</li>'+
-          '<li><b>Matriz de complexidade</b> oficial (quantos aprovadores, quais papéis)</li>'+
-          '<li><b>SLAs oficiais</b> de etapas e aprovações</li>'+
-          '<li><b>Decisão Power Apps × web</b> — orçamento nas duas frentes</li>'+
-          '<li><b>Processo passo a passo</b> documentado pela Vânia</li>'+
+          '<li><b>Perguntas</b> da avaliação de impacto, da Pré-Iniciação e do PSSR, com categoria e onde impactam (Vânia, prometido para sexta 23/10)</li>'+
+          '<li><b>Procedimento e checklist</b> oficiais do MOC</li>'+
+          '<li><b>Orçamento no encerramento</b> do MOC complexo: o que é registrado</li>'+
+          '<li><b>Conversão do Temporário</b> em permanente: novo MOC ou o próprio</li>'+
+          '<li><b>SLAs</b> de cada aprovador e do lembrete</li>'+
         '</ul>'+
       '</div>'+
     '</div>';
@@ -2414,13 +2900,14 @@ function vAjuda(){
    ============================================================ */
 const TOUR = [
   {v:'home', sel:'.stat-grid', t:'Início', p:'Cada perfil abre o sistema vendo o que precisa fazer: MOCs em andamento, o que aguarda a sua aprovação, o que está em atraso e as ações sob sua responsabilidade.'},
+  {v:'home', sel:'#acomp', t:'O MOC não some da tela', p:'Depois de enviado, o MOC continua visível para o dono: etapa atual, com quem está e há quantos dias. Era a principal queixa do sistema atual.'},
   {v:'home', sel:'#roleSel', t:'Troque de perfil a qualquer momento', p:'Admin Master (Vânia), Solicitante, Aprovador e Visualizador. No perfil Visualizador — o acesso pedido para a Tamires — todos os botões de escrita somem.'},
-  {v:'novo', sel:'.steps', t:'Módulo 1 · Criação em 6 etapas', p:'O fluxo espelha o que a Vânia mostrou: tipo de MOC, informações iniciais, avaliação de impacto, ações, aprovadores e revisão.'},
-  {v:'novo', sel:'.type-cards', t:'Etapa 1 · Três tipos de MOC', p:'Permanente, Temporário e o novo Emergencial (mudança já feita sem MOC, formalizada depois). O tipo define a régua de aprovadores e o fluxo de etapas.'},
+  {v:'novo', sel:'.steps', t:'Módulo 1 · Criação em 7 etapas', p:'Tipo de MOC, triagem Simples ou Complexo, informações iniciais, avaliação de impacto, ações, revisores e aprovadores, revisão.'},
+  {v:'novo', sel:'.type-cards', t:'Etapa 1 · Três tipos de MOC', p:'Permanente, Temporário (até 90 dias, reavaliação até 180) e Emergencial (mudança implementada sem MOC, formalizada até o próximo dia útil com aprovação escrita do Site Lead).'},
   {v:'moc', tab:'funcoes', sel:'.func-gate', t:'Ciclo de 6 etapas com papéis', p:'O novo padrão global: cada portão (gate) — de Iniciado a Captura e Encerramento — tem um papel responsável. Uma responsabilidade clara em cada etapa evita lacunas.'},
   {v:'moc', tab:'impacto', sel:'.qual-note', t:'O bloco de Qualidade', p:'Aqui está o motivo do projeto: o sistema global removeu as perguntas de qualidade e a unidade precisa delas por causa das auditorias. Neste sistema elas são obrigatórias e cadastráveis.'},
-  {v:'moc', tab:'impacto', sel:'.dim', t:'Cada "Sim" vira uma ação', p:'Responder "Sim" gera automaticamente um item de ação com responsável e prazo — como o exemplo da caçamba citado na reunião. A quantidade e a criticidade das respostas classificam o MOC como simples ou complexo.'},
-  {v:'moc', tab:'aprov', sel:'.tl', t:'Aprovação em níveis', p:'MOC simples: 3 aprovadores. Complexo: 5, incluindo Qualidade e SHE. Cada nível tem prazo próprio e o MOC não avança sem a aprovação anterior.'},
+  {v:'moc', tab:'impacto', sel:'.dim', t:'Cada "Sim" vira uma ação', p:'Responder "Sim" gera automaticamente um item de ação com responsável e prazo, como o exemplo da caçamba citado na reunião. "Não" indica que o item já tem tratativa; "Não se aplica", que o item não existe na mudança.'},
+  {v:'moc', tab:'aprov', sel:'.tl', t:'Aprovação em níveis', p:'Simples: mínimo de 1 revisor. Complexo: mínimo de 2 revisores e PSSR. Cada nível tem prazo próprio, o MOC não avança sem a aprovação anterior e todos continuam acompanhando.'},
   {v:'moc', tab:'acoes', sel:'.note', t:'Ação aberta trava o encerramento', p:'Regra literal da reunião: MOC com ação em aberto não é finalizado. O botão de encerrar só aparece quando tudo está concluído.'},
   {v:'moc', tab:'emails', sel:'.note', t:'Lembrete automático', p:'A queixa da Vânia era que o e-mail chega uma vez e nunca mais. Aqui o lembrete dispara antes do vencimento e se repete até a decisão sair.'},
   {v:'moc', tab:'trilha', sel:'.tl', t:'Trilha de auditoria', p:'Tudo que aconteceu no MOC fica registrado — é a evidência apresentada nas auditorias que motivaram o projeto.'},
@@ -2517,15 +3004,16 @@ function vEscopo(){
   '<div class="card pad" style="margin-bottom:16px">'+
     '<div class="section-title" style="margin-bottom:12px">Jornada do MOC — do pedido ao encerramento</div>'+
     '<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Etapa</th><th>Quem faz</th><th>O que o sistema faz</th><th>Regra</th></tr></thead><tbody>'+
-    [['1','Adicionar novo MOC','Solicitante','Abre o fluxo e registra o tipo','Permanente, Temporário ou Emergencial'],
-     ['2','Informações iniciais','Solicitante','Valida campos e a janela do MOC','Janela não pode exceder o SLA de 90 dias'],
-     ['3','Avaliação de impacto','Solicitante','<b>Gera as ações automaticamente</b> e classifica a complexidade','Cada "Sim" = 1 ação; "Sim" crítico = MOC complexo'],
-     ['4','Gestão de ações','Solicitante / responsáveis','Atribui responsável e prazo a cada ação','Ação aberta impede o encerramento'],
-     ['5','Aprovadores','Sistema','Pré-preenche a régua conforme tipo × complexidade','Simples: 3 · Complexo: 5'],
-     ['6','Submissão','Solicitante','<b>Dispara e-mail</b> a todos os aprovadores','Confirmação obrigatória'],
-     ['7','Aprovação em níveis','Aprovadores','Encaminha ao próximo nível e lembra quem atrasa','Não avança sem aprovação'],
-     ['8','Execução','Responsáveis','Acompanha ações e prazos','Ação crítica bloqueia o início'],
-     ['9','Encerramento','Responsável','Registra a data e notifica todos','Só com todas as ações concluídas'],
+    [['1','Tipo de MOC','Iniciador','Registra o tipo e mostra as regras dele','Permanente, Temporário ou Emergencial'],
+     ['2','Simples ou Complexo','Iniciador','<b>Triagem de 3 perguntas</b> em sequência','Qualquer "Não" = complexo'],
+     ['3','Informações iniciais','Iniciador','Valida campos e o prazo do MOC','Temporário até 90 dias; limite de 180 com reavaliação'],
+     ['4','Avaliação de impacto','Iniciador','<b>Gera as ações automaticamente</b>','Sim = ação · Não = já tratado · Não se aplica = item inexistente'],
+     ['5','Gestão de ações','Iniciador / responsáveis','Atribui responsável e prazo a cada ação','Ação aberta impede o encerramento'],
+     ['6','Revisores e aprovadores','Sistema / iniciador','Pré-preenche a régua por tipo × complexidade','Mín. 1 revisor (simples) · 2 + PSSR (complexo)'],
+     ['7','Submissão','Iniciador','<b>Dispara e-mail</b> aos aprovadores','Confirmação obrigatória'],
+     ['8','Aprovação em níveis','Aprovadores','Encaminha ao próximo nível, lembra quem atrasa e aceita níveis seguidos em lote','Não avança sem aprovação; todos acompanham'],
+     ['9','Execução','Responsáveis','Acompanha ações, prazos e reavaliações','Ação crítica bloqueia o início'],
+     ['10','Encerramento','Coordenador','Registra a data e notifica todos; no Temporário, o desfecho','Só com todas as ações concluídas'],
     ].map(r=>'<tr><td><b>'+r[0]+'</b></td><td style="font-weight:600">'+r[1]+'</td>'+
       '<td class="tiny">'+r[2]+'</td><td class="tiny">'+r[3]+'</td><td class="tiny">'+r[4]+'</td></tr>').join('')+
     '</tbody></table></div>'+
@@ -2537,9 +3025,11 @@ function vEscopo(){
     '<div class="card pad">'+
       '<div class="section-title" style="margin-bottom:10px">Modelo de dados (núcleo)</div>'+
       '<div class="tbl-wrap"><table><thead><tr><th>Entidade</th><th>Campos-chave</th></tr></thead><tbody>'+
-      [['MOC','id (MOC-AAAAMMDD-NNNNN), tipo, status, titulo, descricao, justificativa, impactoSHE, tipoAlteracao, impacto, site, area, solicitante, responsavel, participantes[], dtInicio, dtFim, complexo, criadoEm, concluidoEm'],
+      [['MOC','id (MOC-AAAAMMDD-NNNNN), tipo, status, titulo, descricao, justificativa, impactoSHE, tipoAlteracao, impacto, site, area, equipamento, iniciador, coordenador, participantes[], dtInicio, dtFim, complexo, desfechoTemporario, criadoEm, concluidoEm'],
+       ['Triagem','mocId, pergunta (1..3), resposta (sim/nao)'],
+       ['Reavaliacao','mocId, dtFimAnterior, dtFimNova, motivo, autor, data'],
        ['Questao','id, dimensao, texto, acaoPadrao, responsavelPadrao, prazoDias, critica'],
-       ['Avaliacao','mocId, questaoId, resposta (sim/nao), observacao, responsavel, vencimento'],
+       ['Avaliacao','mocId, questaoId, resposta (sim/nao/na), observacao, responsavel, vencimento'],
        ['Acao','id (AC-MOC-…-NNNNN), mocId, questaoId, titulo, descricao, responsavel, vencimento, status, necessarioParaIniciar, concluidaEm'],
        ['Aprovacao','mocId, nivel, papel, pessoa, status, prazo, decididoEm, comentario'],
        ['Notificacao','mocId, tipo, destinatario, assunto, corpo, enviadoEm, automatico'],
@@ -2551,13 +3041,16 @@ function vEscopo(){
     '<div class="card pad">'+
       '<div class="section-title" style="margin-bottom:10px">Regras que o código precisa garantir</div>'+
       '<ul class="bul">'+
-        '<li><b>Geração de ação:</b> resposta "Sim" cria ação vinculada à questão; alterar para "Não" remove a ação se ela ainda não foi tocada.</li>'+
-        '<li><b>Complexidade:</b> <span class="mono tiny">complexo = (qtdSins &gt;= gatilho) || (qtdSinsCriticos &gt; 0)</span> — recalculada a cada resposta.</li>'+
+        '<li><b>Geração de ação:</b> resposta "Sim" cria ação vinculada à questão; alterar para "Não" ou "Não se aplica" remove a ação se ela ainda não foi tocada.</li>'+
+        '<li><b>Complexidade:</b> <span class="mono tiny">complexo = triagem.some(r =&gt; r == "nao")</span>; a triagem para no primeiro "Não".</li>'+
+        '<li><b>Revisores:</b> <span class="mono tiny">revisores &gt;= (complexo ? 2 : 1)</span>, pessoas distintas.</li>'+
+        '<li><b>Prazo:</b> Temporário <span class="mono tiny">dtFim - dtInicio &lt;= 90</span> na criação; todos <span class="mono tiny">&lt;= 180</span> inclusive na reavaliação.</li>'+
+        '<li><b>Emergencial:</b> nível de aprovação escrita do Site Lead com prazo no próximo dia útil após a implementação.</li>'+
+        '<li><b>Visibilidade:</b> quem participa do MOC em qualquer papel continua vendo o MOC até o fim.</li>'+
         '<li><b>Bloqueio de encerramento:</b> <span class="mono tiny">acoesAbertas &gt; 0 ⇒ encerrar indisponível</span>.</li>'+
         '<li><b>Bloqueio de início:</b> ação com <span class="mono tiny">necessarioParaIniciar</span> aberta trava a execução.</li>'+
         '<li><b>Sequência de aprovação:</b> apenas o próximo aprovador pendente decide; rejeição encerra o fluxo e devolve ao solicitante.</li>'+
         '<li><b>Lembrete:</b> job diário — <span class="mono tiny">prazo - hoje &lt;= diasLembrete ⇒ enviar</span>, repetindo até a decisão.</li>'+
-        '<li><b>Janela:</b> <span class="mono tiny">dtFim - dtInicio &gt; slaJanela ⇒ bloquear criação</span>.</li>'+
         '<li><b>Trilha imutável:</b> append-only, sem update nem delete — é a evidência de auditoria.</li>'+
       '</ul>'+
     '</div>'+
@@ -2593,15 +3086,17 @@ function vEscopo(){
   '<div class="card pad">'+
     '<div class="section-title" style="margin-bottom:12px">Pontos em aberto — dependem da área de negócio</div>'+
     '<div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Responsável</th><th>Impacto se não fechar</th></tr></thead><tbody>'+
-    [['Lista completa de perguntas da avaliação de impacto','Vânia / SHE','Define o questionário e as ações geradas'],
-     ['Processo documentado passo a passo','Vânia / SHE','Confirma etapas, papéis e transições'],
-     ['Matriz de complexidade (quantos e quais aprovadores)','Vânia / SHE','Régua de aprovação'],
-     ['SLAs de etapas e aprovações','Vânia / SHE','Prazos, lembretes e indicadores de atraso'],
-     ['Validação dos requisitos de BI','Vânia / SHE','Fecha as visões do painel'],
-     ['Decisão Power Apps × web','Unilever / Drive Data','Define arquitetura e orçamento'],
+    [['Perguntas da avaliação de impacto, Pré-Iniciação e PSSR, com categoria e onde impactam','Vânia / SHE (até 23/10)','Define os questionários e as ações geradas'],
+     ['Procedimento e checklist oficiais do MOC','Vânia / SHE','Confirma etapas, papéis e transições'],
+     ['Tipos de alteração (lista em português)','Vânia / SHE','Lista do campo "Tipo de alteração"'],
+     ['Orçamento no encerramento do MOC complexo','Vânia / SHE','O que é registrado e por quem'],
+     ['Conversão do Temporário em permanente','Vânia / SHE','Novo MOC Permanente ou alteração do próprio'],
+     ['Emergencial: o que precisa estar concluído no próximo dia útil','Vânia / SHE','Hoje: a aprovação escrita do Site Lead'],
+     ['Questões em que "Não" gera ação (lógica invertida citada na call)','Vânia / SHE','Regra de geração de ação'],
+     ['SLAs de cada aprovador e do lembrete','Vânia / SHE','Prazos, lembretes e indicadores de atraso'],
     ].map(r=>'<tr><td style="font-weight:600">'+r[0]+'</td><td class="tiny">'+r[1]+'</td><td class="tiny">'+r[2]+'</td></tr>').join('')+
     '</tbody></table></div>'+
-    '<div class="note" style="margin-top:14px">Citação da reunião: <i>"quase fechando com você, vou te mandar as perguntas, todo o processo, todo o passo a passo. A gente vai montar e mandar tudo direitinho."</i></div>'+
+    '<div class="note" style="margin-top:14px">Na ausência da Vânia (5 dias de férias na semana seguinte à call de 21/10), as dúvidas vão para Junior Borges (coordenador) e Rodrigo Cano (gerente).</div>'+
   '</div>';
 }
 
